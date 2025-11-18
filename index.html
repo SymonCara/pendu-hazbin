@@ -256,6 +256,38 @@
         .auth-input::placeholder {
             color: #995555;
         }
+        /* Styles pour le Classement (Leaderboard) */
+        .leaderboard-container {
+            margin-top: 1.5rem;
+            border-top: 1px solid #555;
+            padding-top: 1rem;
+        }
+        .leaderboard-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem;
+            border-bottom: 1px dashed #444;
+            font-size: 0.9rem;
+        }
+        .leaderboard-item:last-child {
+            border-bottom: none;
+        }
+        .rank-badge {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            line-height: 24px;
+            border-radius: 50%;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            margin-right: 0.5rem;
+            font-weight: bold;
+        }
+        .rank-1 { background-color: #ffd700; color: #000; box-shadow: 0 0 5px #ffd700; }
+        .rank-2 { background-color: #c0c0c0; color: #000; }
+        .rank-3 { background-color: #cd7f32; color: #000; }
 
     </style>
 </head>
@@ -301,6 +333,14 @@
             <p id="no-games-message" class="text-gray-400 p-4">Aucune partie en cours...</p>
         </div>
         
+        <!-- NOUVEAU : CLASSEMENT -->
+        <div class="leaderboard-container">
+            <h2 class="text-xl text-yellow-500 mb-2 title-font">Overlords (Classement)</h2>
+            <div id="leaderboard-list" class="bg-black bg-opacity-40 rounded p-2 text-left max-h-48 overflow-y-auto">
+                <p class="text-gray-500 text-center text-sm">Chargement des scores...</p>
+            </div>
+        </div>
+
         <p id="lobby-error" class="lobby-error-message mt-4 font-bold"></p>
     </div>
 
@@ -360,7 +400,7 @@
                 <p class="text-lg text-red-400">Tentatives restantes: <span id="guesses-left" class="font-bold text-xl text-red-300">8</span></p>
             
                 <div id="player-scores" class="mt-4">
-                    <h3 class="text-lg text-yellow-300 font-bold mb-2">Scores</h3>
+                    <h3 class="text-lg text-yellow-300 font-bold mb-2">Scores (Partie)</h3>
                     <div id="scores-list" class="text-left max-w-xs mx-auto text-gray-300 bg-black bg-opacity-20 p-2 rounded">
                     </div>
                 </div>
@@ -544,6 +584,7 @@
             let currentGameId = null;
             let unsubscribeGameListener = null;
             let unsubscribeLobbyListener = null;
+            let unsubscribeLeaderboardListener = null;
             
             const DOM = {
                 // Auth
@@ -555,11 +596,12 @@
                 
                 // Lobby
                 lobbyContainer: document.getElementById('lobby-container'),
-                lobbyUsername: document.getElementById('lobby-username'), // Nouveau
-                logoutBtn: document.getElementById('logout-btn'),       // Nouveau
+                lobbyUsername: document.getElementById('lobby-username'), 
+                logoutBtn: document.getElementById('logout-btn'),       
                 createGameFacileBtn: document.getElementById('create-game-facile-btn'),
                 createGameDifficileBtn: document.getElementById('create-game-difficile-btn'),
                 activeGamesList: document.getElementById('active-games-list'),
+                leaderboardList: document.getElementById('leaderboard-list'), // Nouveau
                 noGamesMessage: document.getElementById('no-games-message'),
                 lobbyError: document.getElementById('lobby-error'),
                 
@@ -592,7 +634,6 @@
                 auth = firebase.auth();
                 db = firebase.firestore();
                 
-                // DOM.userIdDisplay.textContent = "Initialisation terminée."; // Supprimé car élément retiré
                 initializeAuth();
                 addEventListeners();
             } catch (e) {
@@ -601,11 +642,9 @@
             }
 
             function initializeAuth() {
-                // Écoute les changements d'état (connexion/déconnexion)
                 auth.onAuthStateChanged((user) => {
                     if (user) {
                         currentUserId = user.uid;
-                        // Utilise le display name s'il existe, sinon une valeur par défaut temporaire
                         currentHostName = user.displayName || DOM.authPseudo.value || `Joueur_${user.uid.substring(0,4)}`;
                         
                         // Met à jour l'UI
@@ -615,29 +654,42 @@
                         // Affiche le lobby, cache le login
                         DOM.authContainer.classList.add('hidden');
                         DOM.lobbyContainer.classList.remove('hidden');
-                        
                         DOM.createGameFacileBtn.disabled = false;
                         DOM.createGameDifficileBtn.disabled = false;
                         
+                        // SYNC UTILISATEUR ET SCORES
+                        const userRef = db.collection('users').doc(currentUserId);
+                        userRef.get().then(doc => {
+                            if (!doc.exists) {
+                                // Crée le profil joueur s'il n'existe pas
+                                userRef.set({ username: currentHostName, totalScore: 0 });
+                            } else {
+                                // Met à jour le pseudo si changé
+                                if (doc.data().username !== currentHostName) {
+                                    userRef.update({ username: currentHostName });
+                                }
+                            }
+                        });
+
                         listenToLobby();
+                        listenToLeaderboard();
                     } else {
                         currentUserId = null;
                         currentHostName = null;
                         
-                        // Affiche le login, cache le lobby
+                        // Affiche le login
                         DOM.authContainer.classList.remove('hidden');
                         DOM.lobbyContainer.classList.add('hidden');
                         DOM.gameContainer.classList.add('hidden');
-                        
                         DOM.createGameFacileBtn.disabled = true;
                         DOM.createGameDifficileBtn.disabled = true;
                         
                         if (unsubscribeLobbyListener) unsubscribeLobbyListener();
+                        if (unsubscribeLeaderboardListener) unsubscribeLeaderboardListener();
                     }
                 });
             }
 
-            // Nouvelle fonction de gestion de connexion
             async function handleAuth() {
                 const pseudo = DOM.authPseudo.value.trim();
                 const password = DOM.authPassword.value;
@@ -655,17 +707,11 @@
                 DOM.authSubmitBtn.textContent = "Vérification...";
                 DOM.authError.textContent = "";
 
-                // Création d'un email fictif pour utiliser l'auth email/pass de Firebase
                 const fakeEmail = `${pseudo.toLowerCase().replace(/[^a-z0-9]/g, '')}@hazbin.game`;
 
                 try {
-                    // Tentative de connexion standard
                     await auth.signInWithEmailAndPassword(fakeEmail, password);
                 } catch (error) {
-                    
-                    // GESTION DES ERREURS SPÉCIFIQUES
-                    
-                    // 1. Si le compte n'existe pas, on le crée
                     if (error.code === 'auth/user-not-found') {
                         try {
                             const userCredential = await auth.createUserWithEmailAndPassword(fakeEmail, password);
@@ -673,7 +719,6 @@
                             currentHostName = pseudo; 
                             DOM.lobbyUsername.textContent = pseudo;
                         } catch (createError) {
-                            // Si la création échoue aussi car le provider est désactivé (cas de ton erreur)
                             if (createError.code === 'auth/operation-not-allowed') {
                                 await fallbackAnonymousLogin(pseudo);
                             } else {
@@ -681,13 +726,9 @@
                                 DOM.authError.textContent = "Erreur: " + createError.message;
                             }
                         }
-                    } 
-                    // 2. Si l'option Email/Pass est désactivée dans la console (Ton cas actuel)
-                    else if (error.code === 'auth/operation-not-allowed') {
+                    } else if (error.code === 'auth/operation-not-allowed') {
                         await fallbackAnonymousLogin(pseudo);
-                    } 
-                    // 3. Mauvais mot de passe
-                    else if (error.code === 'auth/wrong-password') {
+                    } else if (error.code === 'auth/wrong-password') {
                         DOM.authError.textContent = "Mauvais mot de passe pour ce pseudo !";
                     } else {
                         console.error("Erreur connexion:", error);
@@ -699,18 +740,14 @@
                 }
             }
 
-            // Fonction de secours : Connexion Anonyme mais avec le pseudo
             async function fallbackAnonymousLogin(pseudo) {
                 try {
                     DOM.authSubmitBtn.textContent = "Connexion Invité...";
                     await auth.signInAnonymously();
-                    // Une fois connecté, on met à jour le nom
                     if (auth.currentUser) {
                         await auth.currentUser.updateProfile({ displayName: pseudo });
-                        // Force la mise à jour locale
                         currentHostName = pseudo;
                         DOM.lobbyUsername.textContent = pseudo;
-                        // On affiche un petit message informatif qui disparaîtra
                         DOM.authError.style.color = "orange";
                         DOM.authError.textContent = "Mode Invité activé (Serveur non configuré).";
                     }
@@ -721,16 +758,10 @@
             }
 
             function addEventListeners() {
-                // Auth Listeners
                 DOM.authSubmitBtn.addEventListener('click', handleAuth);
                 DOM.logoutBtn.addEventListener('click', () => auth.signOut());
-                
-                // Support touche Entrée pour le login
-                DOM.authPassword.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') handleAuth();
-                });
+                DOM.authPassword.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleAuth(); });
 
-                // Lobby & Game Listeners
                 DOM.createGameFacileBtn.addEventListener('click', () => showCategoryModal('create'));
                 DOM.createGameDifficileBtn.addEventListener('click', () => createGame('difficile', null));
                 DOM.lobbyReturnButton.addEventListener('click', leaveGame);
@@ -744,38 +775,26 @@
             function showCategoryModal(mode) {
                 DOM.categoryListContainer.innerHTML = '';
                 const allCategories = Object.keys(WORD_CATEGORIES);
-                
                 allCategories.forEach(categoryName => {
                     const btn = document.createElement('button');
                     btn.textContent = categoryName;
                     btn.classList.add('category-selection-button');
                     btn.onclick = () => {
                         hideCategoryModal();
-                        if (mode === 'create') {
-                            createGame('facile', categoryName);
-                        } else if (mode === 'replay') {
-                            handleReplay(categoryName);
-                        }
+                        if (mode === 'create') { createGame('facile', categoryName); }
+                        else if (mode === 'replay') { handleReplay(categoryName); }
                     };
                     DOM.categoryListContainer.appendChild(btn);
                 });
-                
                 DOM.categoryModal.classList.remove('hidden');
-                
-                if (mode === 'create') {
-                    DOM.lobbyContainer.classList.add('hidden');
-                } else {
-                    DOM.gameStatus.classList.add('hidden');
-                }
+                if (mode === 'create') { DOM.lobbyContainer.classList.add('hidden'); }
+                else { DOM.gameStatus.classList.add('hidden'); }
             }
 
             function hideCategoryModal() {
                 DOM.categoryModal.classList.add('hidden');
-                if (!currentGameId) {
-                    DOM.lobbyContainer.classList.remove('hidden');
-                } else {
-                    DOM.gameStatus.classList.remove('hidden');
-                }
+                if (!currentGameId) { DOM.lobbyContainer.classList.remove('hidden'); }
+                else { DOM.gameStatus.classList.remove('hidden'); }
             }
 
             async function deleteGameFromLobby(gameId) {
@@ -783,14 +802,11 @@
                 try {
                     await db.collection("lobby").doc(gameId).delete();
                     await db.collection("games").doc(gameId).delete();
-                } catch (error) {
-                    console.error("Erreur suppression:", error);
-                }
+                } catch (error) { console.error("Erreur suppression:", error); }
             }
             
             function listenToLobby() {
                 if (unsubscribeLobbyListener) unsubscribeLobbyListener();
-                
                 unsubscribeLobbyListener = db.collection("lobby").onSnapshot((snapshot) => {
                     DOM.activeGamesList.innerHTML = '';
                     if (snapshot.empty) {
@@ -798,43 +814,81 @@
                     } else {
                         snapshot.forEach((docSnap) => {
                             const game = docSnap.data();
-                            const gameId = docSnap.id;
-                            
                             const item = document.createElement('div');
                             item.classList.add('lobby-game-item');
-                            
                             const text = document.createElement('span');
                             const difficultyText = game.difficulty === 'facile' ? 'Facile' : 'Difficile';
-                            // Utilise le nom de l'hôte stocké dans le lobby
                             text.textContent = `${game.hostName} (${difficultyText})`;
                             item.appendChild(text);
-
                             const buttonContainer = document.createElement('div');
                             const joinBtn = document.createElement('button');
                             joinBtn.textContent = "Rejoindre";
-
                             if (game.hostId === currentUserId) {
                                 joinBtn.disabled = true;
                                 joinBtn.textContent = "Votre partie";
                                 const deleteBtn = document.createElement('button');
                                 deleteBtn.textContent = "Supprimer";
                                 deleteBtn.classList.add('delete-button');
-                                deleteBtn.onclick = (e) => {
-                                    e.stopPropagation();
-                                    deleteGameFromLobby(gameId);
-                                };
+                                deleteBtn.onclick = (e) => { e.stopPropagation(); deleteGameFromLobby(docSnap.id); };
                                 buttonContainer.appendChild(joinBtn);
                                 buttonContainer.appendChild(deleteBtn);
                             } else {
-                                joinBtn.onclick = () => joinGame(gameId);
+                                joinBtn.onclick = () => joinGame(docSnap.id);
                                 buttonContainer.appendChild(joinBtn);
                             }
                             item.appendChild(buttonContainer);
                             DOM.activeGamesList.appendChild(item);
                         });
                     }
+                });
+            }
+
+            // NOUVEAU : Écoute et affiche le classement
+            function listenToLeaderboard() {
+                if (unsubscribeLeaderboardListener) unsubscribeLeaderboardListener();
+                
+                // On récupère les données brutes et on trie en JS (pour éviter les index Firestore)
+                unsubscribeLeaderboardListener = db.collection('users').onSnapshot(snapshot => {
+                    let users = [];
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        if (data.totalScore !== undefined) {
+                            users.push(data);
+                        }
+                    });
+                    
+                    // Tri décroissant
+                    users.sort((a, b) => b.totalScore - a.totalScore);
+                    
+                    DOM.leaderboardList.innerHTML = '';
+                    if(users.length === 0) {
+                         DOM.leaderboardList.innerHTML = '<p class="text-gray-500 text-center p-2">Aucun Overlord pour le moment.</p>';
+                         return;
+                    }
+
+                    // Affiche le Top 10
+                    users.slice(0, 10).forEach((user, index) => {
+                        const item = document.createElement('div');
+                        item.classList.add('leaderboard-item');
+                        
+                        const rank = index + 1;
+                        let rankClass = "bg-gray-700";
+                        if(rank === 1) rankClass = "rank-1";
+                        else if(rank === 2) rankClass = "rank-2";
+                        else if(rank === 3) rankClass = "rank-3";
+
+                        item.innerHTML = `
+                            <div class="flex items-center">
+                                <span class="rank-badge ${rankClass}">${rank}</span>
+                                <span class="text-white font-bold truncate max-w-[150px]">${user.username}</span>
+                            </div>
+                            <span class="text-yellow-400 font-bold">${user.totalScore} pts</span>
+                        `;
+                        DOM.leaderboardList.appendChild(item);
+                    });
                 }, (error) => {
-                    console.error("Erreur lobby:", error);
+                    console.error("Erreur classement:", error);
+                    DOM.leaderboardList.innerHTML = '<p class="text-red-500 p-2">Erreur chargement.</p>';
                 });
             }
 
@@ -842,18 +896,13 @@
                 if (!currentUserId || !difficulty) return;
                 DOM.createGameFacileBtn.disabled = true;
                 DOM.createGameDifficileBtn.disabled = true;
-                
                 try {
                     const newWordData = getNewWord(categoryName, []);
-                    if (!newWordData || !newWordData.word) {
-                        throw new Error("Erreur récupération mot.");
-                    }
-                    
-                    const wordToUse = newWordData.word.toUpperCase();
+                    if (!newWordData || !newWordData.word) throw new Error("Erreur récupération mot.");
                     
                     const gameDocRef = await db.collection("games").add({
                         hostId: currentUserId,
-                        word: wordToUse,
+                        word: newWordData.word.toUpperCase(),
                         category: newWordData.category,
                         wordDescription: newWordData.description || null, 
                         difficulty: difficulty,
@@ -861,31 +910,26 @@
                         wrongGuesses: 0,
                         status: "playing",
                         playerList: [currentUserId],
-                        playerNames: { [currentUserId]: currentHostName }, // Sauvegarde le nom
+                        playerNames: { [currentUserId]: currentHostName },
                         playerScores: { [currentUserId]: 0 },
                         currentPlayerTurn: currentUserId,
                         starterIndex: 0,
-                        usedWords: [wordToUse]
+                        usedWords: [newWordData.word.toUpperCase()]
                     });
                     
-                    const gameId = gameDocRef.id;
-
-                    await db.collection("lobby").doc(gameId).set({
+                    await db.collection("lobby").doc(gameDocRef.id).set({
                         hostId: currentUserId,
                         hostName: currentHostName,
                         difficulty: difficulty,
                         createdAt: firebase.firestore.FieldValue.serverTimestamp()
                     });
                     
-                    currentGameId = gameId;
-                    const initialGameState = (await gameDocRef.get()).data();
-                    
+                    currentGameId = gameDocRef.id;
                     DOM.lobbyContainer.classList.add('hidden');
                     DOM.gameContainer.classList.remove('hidden');
                     generateKeyboard();
-                    updateUI(initialGameState);
-                    attachGameListener(gameId);
-                    
+                    updateUI((await gameDocRef.get()).data());
+                    attachGameListener(gameDocRef.id);
                 } catch (error) {
                     console.error("Erreur création:", error);
                     DOM.lobbyError.textContent = "Erreur création.";
@@ -897,7 +941,6 @@
             
             function attachGameListener(gameId) {
                 if (unsubscribeGameListener) unsubscribeGameListener();
-                
                 unsubscribeGameListener = db.collection("games").doc(gameId).onSnapshot((docSnap) => {
                     if (!docSnap.exists) {
                         DOM.lobbyError.textContent = "Partie terminée.";
@@ -905,53 +948,32 @@
                         return;
                     }
                     updateUI(docSnap.data());
-                }, (error) => {
-                    console.error("Erreur écoute:", error);
-                    leaveGame();
                 });
             }
 
             async function joinGame(gameId) {
                 if (unsubscribeGameListener) unsubscribeGameListener();
                 if (unsubscribeLobbyListener) unsubscribeLobbyListener();
-
                 currentGameId = gameId;
                 const gameDocRef = db.collection("games").doc(gameId);
-
                 try {
                     await db.runTransaction(async (transaction) => {
                         const gameDocSnap = await transaction.get(gameDocRef);
                         if (!gameDocSnap.exists) throw new Error("Partie introuvable.");
-                        
                         const gameData = gameDocSnap.data();
                         let playerList = gameData.playerList || [];
                         let playerScores = gameData.playerScores || {}; 
                         let playerNames = gameData.playerNames || {};
-                        
-                        if (!playerList.includes(currentUserId)) {
-                            playerList.push(currentUserId);
-                        }
-                        if (!playerScores.hasOwnProperty(currentUserId)) { 
-                            playerScores[currentUserId] = 0; 
-                        }
-                        // Met à jour ou ajoute le nom du joueur
+                        if (!playerList.includes(currentUserId)) { playerList.push(currentUserId); }
+                        if (!playerScores.hasOwnProperty(currentUserId)) { playerScores[currentUserId] = 0; }
                         playerNames[currentUserId] = currentHostName;
-
-                        transaction.update(gameDocRef, { 
-                            playerList: playerList,
-                            playerScores: playerScores,
-                            playerNames: playerNames
-                        });
+                        transaction.update(gameDocRef, { playerList, playerScores, playerNames });
                     });
-                    
-                    const initialGameState = (await gameDocRef.get()).data();
-
                     DOM.lobbyContainer.classList.add('hidden');
                     DOM.gameContainer.classList.remove('hidden');
                     generateKeyboard();
-                    updateUI(initialGameState);
+                    updateUI((await gameDocRef.get()).data());
                     attachGameListener(gameId);
-
                 } catch (error) {
                     console.error("Erreur join:", error);
                     leaveGame();
@@ -959,51 +981,33 @@
             }
 
             async function leaveGame() {
-                if (unsubscribeGameListener) {
-                    unsubscribeGameListener();
-                    unsubscribeGameListener = null;
-                }
-
+                if (unsubscribeGameListener) { unsubscribeGameListener(); unsubscribeGameListener = null; }
                 if (currentGameId && currentUserId) {
                     try {
                         const gameDocRef = db.collection("games").doc(currentGameId);
-                        
                         await db.runTransaction(async (transaction) => {
                             const gameDoc = await transaction.get(gameDocRef);
                             if (!gameDoc.exists) return;
-                            
                             const gameData = gameDoc.data();
-                            
                             if (gameData.hostId === currentUserId) {
                                 transaction.delete(db.collection("lobby").doc(currentGameId));
                                 transaction.delete(gameDocRef);
                             } else {
                                 const newPlayerList = gameData.playerList.filter(uid => uid !== currentUserId);
                                 let newCurrentTurnUID = gameData.currentPlayerTurn;
-
                                 if (gameData.currentPlayerTurn === currentUserId && newPlayerList.length > 0) {
                                     const leavingPlayerIndex = gameData.playerList.indexOf(currentUserId);
-                                    const nextPlayerIndex = leavingPlayerIndex % newPlayerList.length;
-                                    newCurrentTurnUID = newPlayerList[nextPlayerIndex];
+                                    newCurrentTurnUID = newPlayerList[leavingPlayerIndex % newPlayerList.length];
                                 }
-                                
-                                transaction.update(gameDocRef, {
-                                    playerList: newPlayerList,
-                                    currentPlayerTurn: newCurrentTurnUID
-                                });
+                                transaction.update(gameDocRef, { playerList: newPlayerList, currentPlayerTurn: newCurrentTurnUID });
                             }
                         });
-
-                    } catch (e) {
-                        console.warn("Erreur leave:", e.message);
-                    }
+                    } catch (e) {}
                 }
-
                 currentGameId = null;
                 DOM.gameContainer.classList.add('hidden');
                 DOM.lobbyContainer.classList.remove('hidden');
                 DOM.gameStatus.classList.add('hidden');
-                DOM.lobbyError.textContent = "";
                 DOM.createGameFacileBtn.disabled = false;
                 DOM.createGameDifficileBtn.disabled = false;
                 listenToLobby();
@@ -1011,89 +1015,55 @@
 
             async function promptForReplay() {
                 if (!currentGameId || !currentUserId) return;
-                
                 const gameDocRef = db.collection("games").doc(currentGameId);
-                const gameDoc = await gameDocRef.get();
-                if (!gameDoc.exists) return;
-                const gameState = gameDoc.data();
-
+                const gameState = (await gameDocRef.get()).data();
                 if (gameState.hostId !== currentUserId) {
                     DOM.statusMessage.textContent = "Seul l'hôte peut recommencer.";
                     DOM.replayGameButton.style.display = 'none';
                     return;
                 }
-
-                if (gameState.difficulty === 'facile') {
-                    showCategoryModal('replay');
-                } else {
-                    handleReplay(null);
-                }
+                if (gameState.difficulty === 'facile') { showCategoryModal('replay'); }
+                else { handleReplay(null); }
             }
 
             async function handleReplay(categoryName) {
                 if (!currentGameId || !currentUserId) return;
-
                 const gameDocRef = db.collection("games").doc(currentGameId);
-                const gameDoc = await gameDocRef.get();
-                
-                if (!gameDoc.exists) return;
-                const gameState = gameDoc.data();
-
+                const gameState = (await gameDocRef.get()).data();
                 const oldUsedWords = gameState.usedWords || [];
-                
                 const newWordData = getNewWord(categoryName, oldUsedWords); 
                 if (!newWordData || !newWordData.word) return;
-
-                const wordToUse = newWordData.word.toUpperCase();
-                let newUsedWordsList;
                 
-                if (newWordData.needsReset) {
-                    newUsedWordsList = [wordToUse]; 
-                } else {
-                    newUsedWordsList = [...oldUsedWords, wordToUse];
-                }
-
+                let newUsedWordsList = newWordData.needsReset ? [newWordData.word.toUpperCase()] : [...oldUsedWords, newWordData.word.toUpperCase()];
                 const playerList = gameState.playerList;
-                const oldStarterIndex = gameState.starterIndex || 0;
-                const newStarterIndex = (oldStarterIndex + 1) % playerList.length;
-                const newStarterUID = playerList[newStarterIndex];
+                const newStarterUID = playerList[(gameState.starterIndex + 1) % playerList.length];
                 const newPlayerScores = gameState.playerScores || {}; 
-
-                playerList.forEach(uid => {
-                    if (!newPlayerScores.hasOwnProperty(uid)) {
-                        newPlayerScores[uid] = 0;
-                    }
-                });
+                playerList.forEach(uid => { if (!newPlayerScores.hasOwnProperty(uid)) newPlayerScores[uid] = 0; });
 
                 try {
                     await gameDocRef.update({
-                        word: wordToUse,
+                        word: newWordData.word.toUpperCase(),
                         category: newWordData.category,
                         wordDescription: newWordData.description || null, 
                         guessedLetters: [],
                         wrongGuesses: 0,
                         status: "playing",
                         playerScores: newPlayerScores,
-                        starterIndex: newStarterIndex,
+                        starterIndex: (gameState.starterIndex + 1) % playerList.length,
                         currentPlayerTurn: newStarterUID,
                         usedWords: newUsedWordsList
                     });
-                    
                     await db.collection("lobby").doc(currentGameId).set({
                         hostId: currentUserId,
                         hostName: currentHostName,
                         difficulty: gameState.difficulty, 
                         createdAt: firebase.firestore.FieldValue.serverTimestamp()
                     });
-                    
-                } catch (error) {
-                    console.error("Erreur replay:", error);
-                }
+                } catch (error) { console.error("Erreur replay:", error); }
             }
 
             async function handleGuess(letter) {
                 if (!currentGameId || !currentUserId) return;
-
                 const normalizedLetter = letter.toUpperCase();
                 const gameDocRef = db.collection("games").doc(currentGameId);
 
@@ -1101,46 +1071,32 @@
                     await db.runTransaction(async (transaction) => {
                         const gameDocSnap = await transaction.get(gameDocRef);
                         if (!gameDocSnap.exists) throw "Partie introuvable.";
-                        
                         const gameState = gameDocSnap.data();
-                        
                         if (gameState.currentPlayerTurn !== currentUserId) return;
-                        
-                        if (!gameState.word || gameState.guessedLetters.includes(normalizedLetter) || gameState.status !== 'playing') {
-                            return;
-                        }
+                        if (!gameState.word || gameState.guessedLetters.includes(normalizedLetter) || gameState.status !== 'playing') return;
 
                         const newGuessedLetters = [...gameState.guessedLetters, normalizedLetter];
                         let newWrongGuesses = gameState.wrongGuesses;
                         let newStatus = gameState.status;
                         const newScores = JSON.parse(JSON.stringify(gameState.playerScores || {}));
-                        
                         const isCorrectGuess = gameState.word.includes(normalizedLetter);
                         
-                        if (!isCorrectGuess) {
-                            newWrongGuesses++;
-                        }
+                        if (!isCorrectGuess) newWrongGuesses++;
                         
-                        const wordToGuess = gameState.word.replace(/ /g, '');
-                        const allLettersGuessed = wordToGuess.split('').every(l => newGuessedLetters.includes(l));
+                        const allLettersGuessed = gameState.word.replace(/ /g, '').split('').every(l => newGuessedLetters.includes(l));
                         
                         if (allLettersGuessed) {
                             newStatus = 'won';
-                            const currentScore = newScores[currentUserId] || 0;
-                            newScores[currentUserId] = currentScore + 1; 
+                            newScores[currentUserId] = (newScores[currentUserId] || 0) + 1; 
                         } else if (newWrongGuesses >= MAX_GUESSES) {
                             newStatus = 'lost';
                         }
                         
                         let nextPlayerUID = gameState.currentPlayerTurn;
-                        
                         if (newStatus === 'playing' && !isCorrectGuess) {
                             const playerList = gameState.playerList;
-                            if (playerList.length > 0) {
-                                const currentPlayerIndex = playerList.indexOf(currentUserId);
-                                const nextPlayerIndex = (currentPlayerIndex + 1) % playerList.length;
-                                nextPlayerUID = playerList[nextPlayerIndex];
-                            }
+                            const idx = playerList.indexOf(currentUserId);
+                            nextPlayerUID = playerList[(idx + 1) % playerList.length];
                         }
 
                         transaction.update(gameDocRef, {
@@ -1150,10 +1106,21 @@
                             currentPlayerTurn: nextPlayerUID,
                             playerScores: newScores 
                         });
+
+                        // NOUVEAU : Si victoire, mise à jour du score global (hors transaction game pour éviter complexité)
+                        if (allLettersGuessed) {
+                            updateGlobalScore();
+                        }
                     });
-                } catch (error) {
-                    console.error("Erreur guess:", error);
-                }
+                } catch (error) { console.error("Erreur guess:", error); }
+            }
+
+            // Fonction séparée pour mettre à jour le score global
+            function updateGlobalScore() {
+                // Fire and forget update
+                db.collection('users').doc(currentUserId).update({
+                    totalScore: firebase.firestore.FieldValue.increment(1)
+                }).catch(e => console.warn("Erreur maj score global:", e));
             }
 
             function updateUI(gameState) {
@@ -1173,8 +1140,6 @@
 
                 const isMyTurn = (gameState.currentPlayerTurn === currentUserId);
                 const gameIsOver = (gameState.status !== 'playing');
-
-                // Récupération des noms des joueurs depuis l'état du jeu (ou fallback)
                 const playerNames = gameState.playerNames || {};
 
                 if (gameIsOver) {
@@ -1184,10 +1149,7 @@
                     DOM.turnIndicator.style.color = "#ffd700";
                 } else {
                     const turnPlayerId = gameState.currentPlayerTurn;
-                    let turnPlayerName = "Autre joueur";
-                    if (turnPlayerId) {
-                         turnPlayerName = playerNames[turnPlayerId] || `Joueur_${turnPlayerId.substring(0, 6)}`;
-                    }
+                    const turnPlayerName = playerNames[turnPlayerId] || "Joueur";
                     DOM.turnIndicator.textContent = `Au tour de ${turnPlayerName}...`;
                     DOM.turnIndicator.style.color = "#aaa";
                 }
@@ -1203,26 +1165,20 @@
             function updateScoreboard(playerList, playerScores, currentPlayerTurn, playerNames = {}) {
                 DOM.scoresList.innerHTML = ''; 
                 if (!playerList || !playerScores) return;
-
                 playerList.forEach(uid => {
-                    const name = playerNames[uid] || `Joueur_${uid.substring(0, 6)}`;
+                    const name = playerNames[uid] || `Joueur`;
                     const score = playerScores[uid] || 0;
-                    
                     const scoreElement = document.createElement('div');
                     scoreElement.classList.add('flex', 'justify-between', 'p-1');
-                    
                     const nameSpan = document.createElement('span');
                     nameSpan.textContent = `${name}:`;
-                    
                     const scoreSpan = document.createElement('span');
                     scoreSpan.textContent = score;
                     scoreSpan.classList.add('font-bold');
-
                     if (uid === currentPlayerTurn) {
                         nameSpan.classList.add('text-yellow-300');
                         scoreElement.classList.add('bg-gray-700', 'bg-opacity-50', 'rounded');
                     }
-                    
                     scoreElement.appendChild(nameSpan);
                     scoreElement.appendChild(scoreSpan);
                     DOM.scoresList.appendChild(scoreElement);
@@ -1231,61 +1187,42 @@
 
             function getNewWord(categoryName = null, usedWords = []) {
                 let categoryToPickFrom = categoryName;
-                
                 if (!categoryToPickFrom) {
                     const allCategories = Object.keys(WORD_CATEGORIES);
                     categoryToPickFrom = allCategories[Math.floor(Math.random() * allCategories.length)];
                 }
-                
                 const wordList = WORD_CATEGORIES[categoryToPickFrom];
-                if (!wordList || wordList.length === 0) {
-                    return getNewWord(null, usedWords);
-                }
+                if (!wordList || wordList.length === 0) return getNewWord(null, usedWords);
 
-                let needsReset = false;
                 let availableWords = wordList.filter(word => !usedWords.includes(word.toUpperCase()));
-                
-                if (availableWords.length === 0) {
-                    availableWords = wordList;
-                    needsReset = true;
-                }
+                let needsReset = false;
+                if (availableWords.length === 0) { availableWords = wordList; needsReset = true; }
                 
                 const word = availableWords[Math.floor(Math.random() * availableWords.length)];
-                
                 let description = null;
                 if (categoryToPickFrom === "Ships (Couples)") {
                     const shipObj = SHIP_DATA_RAW.find(s => s.ship.toUpperCase() === word);
-                    if (shipObj) {
-                        description = shipObj.personnages.join(" + ");
-                    }
+                    if (shipObj) description = shipObj.personnages.join(" + ");
                 }
-
                 return { word: word, category: categoryToPickFrom, description: description, needsReset: needsReset };
             }
 
             function displayWord(currentWord, guessedLetters) {
                 DOM.wordDisplay.innerHTML = '';
                 const words = currentWord.split(' ');
-                
                 words.forEach((word, index) => {
                     const wordContainer = document.createElement('div');
                     wordContainer.classList.add('flex', 'flex-wrap', 'justify-center', 'gap-2', 'md:gap-3');
-                    
                     if (index > 0) {
                         const spaceElement = document.createElement('div');
                         spaceElement.classList.add('w-4', 'md:w-8');
                         DOM.wordDisplay.appendChild(spaceElement);
                     }
-                    
                     word.split('').forEach(letter => {
                         const letterElement = document.createElement('div');
                         letterElement.classList.add('text-center', 'text-2xl', 'md:text-4xl', 'word-display-letter');
-                        
-                        if (guessedLetters.includes(letter)) {
-                            letterElement.textContent = letter;
-                        } else {
-                            letterElement.textContent = '_';
-                        }
+                        if (guessedLetters.includes(letter)) letterElement.textContent = letter;
+                        else letterElement.textContent = '_';
                         wordContainer.appendChild(letterElement);
                     });
                     DOM.wordDisplay.appendChild(wordContainer);
@@ -1295,7 +1232,6 @@
             function generateKeyboard() {
                 DOM.keyboard.innerHTML = '';
                 const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-                
                 alphabet.split('').forEach(letter => {
                     const keyButton = document.createElement('button');
                     keyButton.textContent = letter;
@@ -1315,49 +1251,30 @@
             function updateHangman(wrongGuesses) {
                 DOM.hangmanParts.forEach(part => part.style.visibility = 'hidden');
                 for (let i = 0; i < wrongGuesses; i++) {
-                    if (i < DOM.hangmanParts.length) {
-                        DOM.hangmanParts[i].style.visibility = 'visible';
-                    }
+                    if (i < DOM.hangmanParts.length) DOM.hangmanParts[i].style.visibility = 'visible';
                 }
             }
 
             async function checkEndGame(gameState) {
-                if (gameState.status === 'playing') {
-                    DOM.gameStatus.classList.add('hidden');
-                    return;
-                }
-                
-                if (gameState.hostId === currentUserId) {
-                    try {
-                        await db.collection("lobby").doc(currentGameId).delete();
-                    } catch(e) {}
-                }
+                if (gameState.status === 'playing') { DOM.gameStatus.classList.add('hidden'); return; }
+                if (gameState.hostId === currentUserId) { try { await db.collection("lobby").doc(currentGameId).delete(); } catch(e) {} }
                 
                 DOM.finalScoresList.innerHTML = '';
-                const { playerList, playerScores, playerNames } = gameState; // Récupère aussi les noms
+                const { playerList, playerScores, playerNames } = gameState; 
                 if (playerList && playerScores) {
                      playerList.forEach(uid => {
-                        const name = (playerNames && playerNames[uid]) ? playerNames[uid] : `Joueur_${uid.substring(0, 6)}`;
+                        const name = (playerNames && playerNames[uid]) ? playerNames[uid] : `Joueur`;
                         const score = playerScores[uid] || 0;
                         const scoreElement = document.createElement('div');
                         scoreElement.classList.add('flex', 'justify-between', 'p-1');
-                        const nameSpan = document.createElement('span');
-                        nameSpan.textContent = `${name}:`;
-                        const scoreSpan = document.createElement('span');
-                        scoreSpan.textContent = score;
-                        scoreSpan.classList.add('font-bold');
-                        scoreElement.appendChild(nameSpan);
-                        scoreElement.appendChild(scoreSpan);
+                        scoreElement.innerHTML = `<span>${name}:</span><span class="font-bold">${score}</span>`;
                         DOM.finalScoresList.appendChild(scoreElement);
                     });
                 }
                 
                 DOM.gameStatus.classList.remove('hidden');
-                
                 let wordText = gameState.word;
-                if (gameState.wordDescription) {
-                    wordText += `\n(${gameState.wordDescription})`;
-                }
+                if (gameState.wordDescription) wordText += `\n(${gameState.wordDescription})`;
 
                 if (gameState.status === 'won') {
                     DOM.statusMessage.textContent = 'Gagné ! Tu es sauvé !';
@@ -1387,7 +1304,6 @@
                     if (keyButton && !keyButton.disabled) handleGuess(letter);
                 }
             }
-
         });
     </script>
 </body>
