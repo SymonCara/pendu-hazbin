@@ -1,0 +1,1411 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Le Pendu de l'Enfer</title>
+    
+    <link rel="icon" type="image/png" href="./image/logo-site.png">
+    
+    <!-- Scripts Firebase (v8 "compat" - Plus stable pour ce setup) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Special+Elite&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Special Elite', monospace;
+            color: #fce8f3;
+            /* Correction: Ajout de .jpg */
+            background-image: url('./image/backround.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-color: #000;
+        }
+        @keyframes pulse-text-glow {
+            0%, 100% { text-shadow: 0 0 5px #ff0000, 0 0 10px #ff0000, 0 0 15px #ff4d4d; }
+            50% { text-shadow: 0 0 10px #ff0000, 0 0 20px #ff4d4d, 0 0 30px #ff4d4d; }
+        }
+        @keyframes pulse-border-glow {
+            0%, 100% { border-color: #ff0000; box-shadow: 0 0 20px #ff0000; }
+            50% { border-color: #ff4d4d; box-shadow: 0 0 30px #ff4d4d, 0 0 10px #ff0000; }
+        }
+        .title-font {
+            font-family: 'Cinzel Decorative', cursive;
+            color: #ff0000;
+            text-shadow: 0 0 5px #ff0000, 0 0 10px #ff0000, 0 0 15px #ff4d4d;
+            animation: pulse-text-glow 2.5s ease-in-out infinite;
+        }
+        .game-container, .lobby-container, .modal-container {
+            backdrop-filter: blur(5px);
+            background-color: rgba(30, 0, 0, 0.6);
+            border: 2px solid #ff0000;
+            box-shadow: 0 0 20px #ff0000;
+            animation: pulse-border-glow 2.5s ease-in-out infinite;
+        }
+        .word-display-letter {
+            font-family: 'Special Elite', monospace;
+            font-weight: bold;
+            color: #ffd700;
+            border-bottom: 4px solid #ffd700;
+            width: 1.5em; /* Largeur fixe pour chaque lettre */
+            height: 2em;
+            line-height: 2em;
+        }
+        .word-display-letter.space {
+            border-bottom: none; /* Pas de trait pour les espaces */
+        }
+        .key {
+            background-color: rgba(50, 0, 10, 0.8);
+            border: 1px solid #ff0000;
+            color: #fce8f3;
+            transition: all 0.2s ease;
+            font-family: 'Special Elite', monospace;
+            font-size: 1.1rem;
+        }
+        .key:hover:not(:disabled) {
+            background-color: #ff0000;
+            color: #000;
+            transform: scale(1.1);
+        }
+        .key:disabled {
+            background-color: #333;
+            color: #666;
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .hangman-part {
+            stroke: #ffd700;
+            stroke-width: 4;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            visibility: hidden; /* Masqué par défaut */
+            transition: visibility 0s;
+        }
+        .gallows-part {
+            stroke: #cc0000;
+            stroke-width: 7;
+            fill: none;
+        }
+        .game-status {
+            background-color: rgba(0, 0, 0, 0.9);
+            border: 2px solid #ffd700;
+        }
+        .replay-button, .lobby-button {
+            background-color: #ffd700;
+            color: #1a0000;
+            font-weight: bold;
+            transition: all 0.2s ease;
+            font-family: 'Special Elite', monospace;
+        }
+        .replay-button:hover, .lobby-button:hover {
+            background-color: #ff0000;
+            color: #fff;
+            box-shadow: 0 0 15px #ff0000;
+        }
+        /* Style pour les boutons de difficulté */
+        .difficulty-button {
+            background-color: #b8860b; /* Or sombre */
+            color: #1a0000;
+            font-size: 1.1rem; 
+            padding-top: 0.5rem; 
+            padding-bottom: 0.5rem;
+        }
+        .difficulty-button:disabled {
+            background-color: #555;
+            opacity: 0.7;
+        }
+        .difficulty-button:hover:not(:disabled) {
+             background-color: #ffd700; /* Or vif */
+             color: #000;
+        }
+        .difficulty-button.difficile {
+            background-color: #cc0000; /* Rouge */
+            color: #fff;
+        }
+        .difficulty-button.difficile:hover:not(:disabled) {
+            background-color: #ff4d4d; /* Rouge vif */
+            color: #000;
+        }
+        
+        /* Style pour la liste des parties dans le lobby */
+        .lobby-game-list {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ff0000;
+            border-radius: 8px;
+            margin-top: 1rem;
+            padding: 0.5rem;
+            background-color: rgba(0, 0, 0, 0.3);
+        }
+        .lobby-game-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0.5rem;
+            border-bottom: 1px dashed #555;
+        }
+        .lobby-game-item:last-child {
+            border-bottom: none;
+        }
+        .lobby-game-item button {
+            background-color: #cc0000;
+            color: #fff;
+            padding: 0.25rem 0.75rem;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            margin-left: 4px; /* Espace entre les boutons */
+        }
+        .lobby-game-item button:hover {
+            background-color: #ff0000;
+        }
+        .lobby-game-item button:disabled {
+             background-color: #555;
+             opacity: 0.7;
+        }
+        .delete-button {
+            background-color: #800000 !important;
+        }
+        .delete-button:hover {
+             background-color: #cc0000 !important;
+        }
+        .lobby-separator {
+            color: #ffd700;
+            font-weight: bold;
+        }
+        .lobby-error-message {
+            color: #ff0000;
+            text-shadow: 0 0 5px #ff0000;
+            min-height: 1.5rem; /* Empêche le saut de page */
+        }
+        .user-id-display {
+            color: #888;
+            font-size: 0.8rem;
+        }
+        /* Style des scores */
+        #scores-list .flex {
+            border-bottom: 1px dashed #444;
+        }
+        #scores-list .flex:last-child {
+            border-bottom: none;
+        }
+
+        /* Styles pour le modal de catégorie */
+        .category-modal {
+            background-color: rgba(0, 0, 0, 0.9);
+            border: 2px solid #ffd700;
+        }
+        #category-list-container {
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+        .category-selection-button {
+            background-color: rgba(50, 0, 10, 0.8);
+            border: 1px solid #ff0000;
+            color: #fce8f3;
+            transition: all 0.2s ease;
+            font-family: 'Special Elite', monospace;
+            font-size: 1.1rem;
+            width: 100%;
+            margin-bottom: 0.5rem;
+            padding: 0.75rem;
+        }
+        .category-selection-button:hover {
+            background-color: #ff0000;
+            color: #000;
+            transform: scale(1.02);
+        }
+        .modal-cancel-button {
+            background-color: #555;
+            color: #fff;
+        }
+        .modal-cancel-button:hover {
+            background-color: #888;
+            color: #000;
+        }
+
+        /* Cacher la barre de défilement */
+        #category-list-container::-webkit-scrollbar {
+            display: none; /* Cache la barre pour Chrome/Safari/Edge */
+        }
+        #category-list-container {
+            scrollbar-width: none; /* Cache la barre pour Firefox */
+            -ms-overflow-style: none; /* Cache la barre pour IE/Edge (anciens) */
+        }
+
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-2">
+
+    <!-- Lobby (visible par défaut) -->
+    <div id="lobby-container" class="lobby-container w-full max-w-md mx-auto p-6 md:p-8 rounded-lg text-center">
+        <h1 class="title-font text-5xl md:text-6xl mb-6">Rejoindre l'Enfer</h1>
+        
+        <!-- NOUVEAU : Boutons de difficulté -->
+        <div class="flex gap-4 mb-4">
+            <button id="create-game-facile-btn" class="lobby-button difficulty-button w-1/2 py-3 px-4 rounded-lg" disabled>
+                Créer (Facile)
+            </button>
+            <button id="create-game-difficile-btn" class="lobby-button difficulty-button difficile w-1/2 py-3 px-4 rounded-lg" disabled>
+                Créer (Difficile)
+            </button>
+        </div>
+        
+        <div class="lobby-separator text-lg my-2">- OU -</div>
+        
+        <h2 class="text-xl text-yellow-300">Parties en cours</h2>
+        <div id="active-games-list" class="lobby-game-list">
+            <p id="no-games-message" class="text-gray-400 p-4">Aucune partie en cours...</p>
+        </div>
+        
+        <p id="lobby-error" class="lobby-error-message mt-4 font-bold"></p>
+        <p id="user-id-display" class="user-id-display mt-4">Initialisation...</p>
+    </div>
+
+    <!-- Jeu (caché par défaut) -->
+    <div id="game-container" class="game-container w-full max-w-6xl mx-auto p-2 md:p-4 rounded-lg text-center hidden">
+        
+        <!-- Bouton Quitter -->
+        <button id="leave-game-btn" class="lobby-button absolute top-2 left-2 text-sm py-1 px-3 rounded-lg z-10">
+            Quitter
+        </button>
+
+        <h1 class="title-font text-4xl md:text-6xl mb-2">Le Pendu de l'Enfer</h1>
+        
+        <p id="category-p" class="text-lg md:text-xl text-yellow-300 mb-2">Catégorie: <span id="word-category" class="font-bold">Chargement...</span></p>
+        
+        <!-- Indicateur de Tour -->
+        <p id="turn-indicator" class="text-xl text-gray-400 mb-4"></p>
+
+        <div class="flex flex-col md:flex-row justify-around items-center mb-4">
+            
+            <div id="hangman-box" class="w-full md:w-1/3 mb-4 md:mb-0">
+                <svg viewBox="0 0 200 250" class="max-w-[300px] mx-auto">
+                    <!-- ... SVG du pendu (inchangé) ... -->
+                    <defs>
+                        <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+                            <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                            <feMerge>
+                                <feMergeNode in="coloredBlur"/>
+                                <feMergeNode in="SourceGraphic"/>
+                            </feMerge>
+                        </filter>
+                    </defs>
+                    <rect x="55" y="25" width="100" height="10" fill="#330000" />
+                    <rect x="55" y="25" width="10" height="210" fill="#330000" />
+                    <rect x="10" y="235" width="180" height="10" fill="#330000" />
+                    <rect x="50" y="20" width="100" height="10" fill="#cc0000" />
+                    <rect x="50" y="20" width="10" height="210" fill="#cc0000" />
+                    <rect x="5" y="230" width="180" height="10" fill="#cc0000" />
+                    <line x1="145" y1="25" x2="145" y2="50" stroke="#ffd700" stroke-width="3" />
+                    <g id="hangman-figure">
+                        <line x1="90" y1="20" x2="50" y2="60" class="hangman-part gallows-part" /> <!-- Support potence -->
+                        <g class="hangman-part">
+                            <!-- Tête (Ange Exorciste) -->
+                            <circle cx="145" cy="70" r="25" fill="#ffd700" filter="url(#glow)" />
+                            <circle cx="145" cy="70" r="20" fill="#fce8f3" stroke="#ffd700" stroke-width="2" />
+                            <line x1="135" y1="60" x2="155" y2="80" stroke="#000000" stroke-width="3" />
+                            <line x1="155" y1="60" x2="135" y2="80" stroke="#000000" stroke-width="3" />
+                        </g>
+                        <line x1="145" y1="90" x2="145" y2="150" class="hangman-part" /> <!-- Corps -->
+                        <path d="M135 100 Q 100 100 110 70 Q 100 120 135 120 Z" class="hangman-part" stroke="#fff" fill="#fff"/>
+                        <path d="M155 100 Q 190 100 180 70 Q 190 120 155 120 Z" class="hangman-part" stroke="#fff" fill="#fff"/>
+                        <line x1="145" y1="100" x2="115" y2="130" class="hangman-part" /> <!-- Bras 1 -->
+                        <line x1="145" y1="100" x2="175" y2="130" class="hangman-part" /> <!-- Bras 2 -->
+                        <g class="hangman-part">
+                            <line x1="145" y1="150" x2="125" y2="190" />
+                            <line x1="145" y1="150" x2="165" y2="190" />
+                        </g>
+                    </g>
+                </svg>
+                <p class="text-lg text-red-400">Tentatives restantes: <span id="guesses-left" class="font-bold text-xl text-red-300">8</span></p>
+            
+                <!-- Tableau des scores en direct -->
+                <div id="player-scores" class="mt-4">
+                    <h3 class="text-lg text-yellow-300 font-bold mb-2">Scores</h3>
+                    <div id="scores-list" class="text-left max-w-xs mx-auto text-gray-300 bg-black bg-opacity-20 p-2 rounded">
+                        <!-- Les scores seront injectés ici par JS -->
+                    </div>
+                </div>
+            </div>
+            
+            <div id="word-display" class="w-full md:w-2/3 flex flex-wrap justify-center items-center gap-2 md:gap-3 max-w-full">
+                <!-- Les lettres du mot seront injectées ici -->
+                <div class="text-2xl text-yellow-300">Chargement du mot...</div>
+            </div>
+        </div>
+
+        <div id="keyboard" class="flex flex-wrap justify-center gap-1 md:gap-2 max-w-3xl mx-auto">
+            <!-- Le clavier sera généré ici -->
+        </div>
+        
+        <!-- Écran de fin de partie (caché) -->
+        <div id="game-status" class="game-status fixed inset-0 bg-black bg-opacity-90 flex flex-col justify-center items-center z-50 hidden">
+            <h2 id="status-message" class="text-4xl font-bold mb-4"></h2>
+            <p id="correct-word" class="text-2xl text-gray-400 mb-8"></p>
+            
+            <!-- Tableau des scores finaux -->
+            <div class="mb-6 w-full max-w-xs">
+                <h3 class="text-lg text-yellow-300 font-bold mb-2">Scores Finaux</h3>
+                <div id="final-scores-list" class="text-left max-w-xs mx-auto text-gray-300 bg-black bg-opacity-20 p-2 rounded">
+                    <!-- Les scores finaux seront injectés ici par JS -->
+                </div>
+            </div>
+
+            <div class="flex gap-4">
+                <button id="replay-game-button" class="replay-button text-xl py-3 px-8 rounded-lg">
+                    Recommencer
+                </button>
+                <button id="lobby-return-button" class="replay-button text-xl py-3 px-8 rounded-lg">
+                    Retour au Lobby 
+                </button>
+            </div>
+        </div>
+        
+    </div>
+
+    <!-- Modal de sélection de catégorie (caché) -->
+    <div id="category-selection-modal" class="modal-container fixed inset-0 bg-black bg-opacity-90 flex flex-col justify-center items-center z-50 hidden p-4">
+        <div class="w-full max-w-md mx-auto p-6 rounded-lg text-center">
+            <h2 class="title-font text-4xl mb-6">Choisissez une catégorie</h2>
+            <div id="category-list-container" class="w-full">
+                <!-- Les catégories seront injectées ici -->
+            </div>
+            <button id="category-modal-cancel-btn" class="replay-button modal-cancel-button text-xl py-3 px-8 rounded-lg mt-6 w-full">
+                Annuler
+            </button>
+        </div>
+    </div>
+
+    <!-- SCRIPT (v25 - Mots à jour) -->
+    <script>
+        // Configuration Firebase (v8)
+        const firebaseConfig = {
+          apiKey: "AIzaSyA1-S9RlPXs4nYd-NY4BXdam2g9jUxR7LI",
+          authDomain: "pendu-hazbin.firebaseapp.com",
+          projectId: "pendu-hazbin",
+          storageBucket: "pendu-hazbin.firebasestorage.app",
+          messagingSenderId: "1036994393348",
+          appId: "1:1036994393348:web:00eb92fa640eaa0a160c51",
+          measurementId: "G-484X5XH86E"
+        };
+        
+        // --- CONSTANTES ---
+        const MAX_GUESSES = 8;
+        
+        // --- LISTE DE MOTS ---
+        const WORD_CATEGORIES = {
+            "Personnage": [
+                "ADAM", "ALASTOR", "ANGEL DUST", "ASMODEUS", "BEELZEBUB", "CARMILLA CARMINE", 
+                "CHARLIE MORNINGSTAR", "CHERRI BOMB", "EMILY", "HUSK", "LILITH MORNINGSTAR", 
+                "LUCIFER MORNINGSTAR", "LUTE", "MAMMON", "MIMZY", "NIFFTY", "ROSIE", 
+                "SAINT PIERRE", "SATAN", "SERA", "SIR PENTIOUS", "STOLAS", "VALENTINO", 
+                "VAGGIE", "VELVETTE", "VOX", "ZESTIAL",
+                "ABEL", "BAXTER", "DAZZLE", "FAT NUGGETS", "KATIE KILLJOY", "KEEKEE", 
+                "RAZZLE", "SUSAN", "TOM TRENCH", "TRAVIS", "ZEEZI", 
+                "AGENT ONE", "AGENT TWO", "BLITZO", "FIZZAROLLI", "LOONA", "MARTHA", 
+                "MILLIE", "MOXXIE", "OCTAVIA", "RALPHIE", "STRIKER", "LEVIATHAN",
+                "EGG BOIZ", "ANDREALPHUS", "SALLIE MAY", "WALLY WACKFORD" // Nouveaux ajouts
+            ],
+            "Lieu & Faction": [
+                "CERCLE DE L ORGUEIL", "CANNIBAL TOWN", "ENFER", "HAZBIN HOTEL", "HELLAVERSE", 
+                "PARADIS", "HEAVEN", "PENTAGRAM CITY", "V TOWER", "LES VEES", "VOXTEK",
+                "IMP", "CERCLE DE LA COLERE", "CERCLE DE L AVARICE", "CERCLE DE LA PARESSE",
+                "CERCLE DE LA GOURMANDISE", "CERCLE DE LA LUXURE", "CERCLE DE L ENVIE",
+                "PURGATOIRE", "CERCLE DES PECHES",
+                "MAFIA", "LOO LOO LAND",// Nouveaux ajouts
+            ],
+            "Espèce & Rang & Objets & Concepts": [
+                "ARCHANGE", "GOETIA", "CHERUBINS", "EXORCISTES", "WINNERS", "HELLBORN", 
+                "HELLHOUNDS", "IMPS", "OVERLORDS", "PECHEURS", "SINNERS", "SERAPHINS",
+                "DOMINATIONS", "PUISSANCES", "TRONE", "VERTUS", "SUCCUBES", "DEMON DECHU",
+                "PACTE", "CONTRAT", "GRIMOIRE", "AME", "DAMNES", "PECHE",
+                "ANGE", "DEMON", "PORTAIL", "GUERRE", "BARRIERE MAGIQUE", // Nouveaux ajouts
+                "ARS GOETIA", "PRINCE DEMON", "ROI DE L ENFER", "REINE DE L ENFER", // Nouveaux ajouts
+                "ARME ANGELIQUE", "LANCE ANGELIQUE", "AUREOLE" // Nouveaux ajouts
+            ],
+            "Musique (EN)": [
+                "HAPPY DAY IN HELL", "HELL IS FOREVER", "STAYED GONE", "IT STARTS WITH SORRY",
+                "RESPECTLESS", "WHATEVER IT TAKES", "POISON", "LOSER, BABY", "HELLS GREATEST DAD",
+                "MORE THAN ANYTHING", "WELCOME TO HEAVEN", "OUT FOR LOVE", "TRUST US", "LIKE YOU",
+                "SERA CONFESSION", "GRAVITY", "PISS", "SPEEDRUN TO REDEMPTION", "DONT YOU FORGET",
+                "CLEAN IT UP", "BAD WITH US", "VOX POPULI", "VOX DEI", "LOVE IN A BOTTLE",
+                "LOSIN STREAK", "EASY"
+            ],
+            "Musique (FR)": [
+                "UN JOYEUX JOUR EN ENFER", "L ENFER EST ETERNEL", "DEMANDEZ PARDON", "IRRESPECTUEUX",
+                "POISON", "LE MEILLEUR PERE DE L ENFER", "PLUS QUE TOUT", "BIENVENUE AU PARADIS",
+                "FAIS NOUS CONFIANCE", "UNE FOIS QU ON SERA LA HAUT", "LA CONFESSION DE SERA",
+                "GRAVITY", "PISS", "SPEEDRUN VERS LA REDEMPTION", "N OUBLIE PAS", "VOX POPULI",
+                "VOX DEI", "L AMOUR EN BOUTEILLE", "FACILE"
+            ]
+        };
+        
+        // Attend que le DOM soit prêt
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // --- VARIABLES D'ÉTAT ---
+            let auth;
+            let db;
+            let currentUserId = null;
+            let currentHostName = null;
+            let currentGameId = null;
+            let unsubscribeGameListener = null;
+            let unsubscribeLobbyListener = null;
+            
+            // --- ÉLÉMENTS DU DOM ---
+            const DOM = {
+                // Lobby
+                lobbyContainer: document.getElementById('lobby-container'),
+                createGameFacileBtn: document.getElementById('create-game-facile-btn'),
+                createGameDifficileBtn: document.getElementById('create-game-difficile-btn'),
+                activeGamesList: document.getElementById('active-games-list'),
+                noGamesMessage: document.getElementById('no-games-message'),
+                lobbyError: document.getElementById('lobby-error'),
+                userIdDisplay: document.getElementById('user-id-display'),
+                // Jeu
+                gameContainer: document.getElementById('game-container'),
+                leaveGameBtn: document.getElementById('leave-game-btn'),
+                categoryP: document.getElementById('category-p'),
+                categoryDisplay: document.getElementById('word-category'),
+                turnIndicator: document.getElementById('turn-indicator'),
+                guessesLeftSpan: document.getElementById('guesses-left'),
+                hangmanParts: document.querySelectorAll('.hangman-part'),
+                wordDisplay: document.getElementById('word-display'),
+                keyboard: document.getElementById('keyboard'),
+                scoresList: document.getElementById('scores-list'), 
+                // Statut de fin
+                gameStatus: document.getElementById('game-status'),
+                statusMessage: document.getElementById('status-message'),
+                correctWordDisplay: document.getElementById('correct-word'),
+                finalScoresList: document.getElementById('final-scores-list'), 
+                replayGameButton: document.getElementById('replay-game-button'),
+                lobbyReturnButton: document.getElementById('lobby-return-button'),
+                // Modal Catégorie
+                categoryModal: document.getElementById('category-selection-modal'),
+                categoryListContainer: document.getElementById('category-list-container'),
+                categoryModalCancelBtn: document.getElementById('category-modal-cancel-btn')
+            };
+
+            // --- INITIALISATION ---
+            
+            try {
+                // Initialisation de Firebase (v8)
+                firebase.initializeApp(firebaseConfig);
+                auth = firebase.auth();
+                db = firebase.firestore();
+                
+                DOM.userIdDisplay.textContent = "Initialisation terminée. Connexion...";
+                initializeAuth();
+                addEventListeners();
+            } catch (e) {
+                console.error("Erreur d'initialisation Firebase:", e);
+                DOM.userIdDisplay.textContent = "Erreur critique.";
+                DOM.lobbyError.textContent = "Impossible d'initialiser Firebase. Vérifiez la connexion ou les bloqueurs de scripts.";
+            }
+
+            // --- LOGIQUE D'AUTHENTIFICATION ---
+            
+            function initializeAuth() {
+                auth.onAuthStateChanged((user) => {
+                    if (user) {
+                        // L'utilisateur est connecté (anonymement)
+                        currentUserId = user.uid;
+                        currentHostName = `Joueur_${currentUserId.substring(0, 6)}`;
+                        DOM.userIdDisplay.textContent = `Connecté en tant que: ${currentHostName}`;
+                        DOM.lobbyError.textContent = "";
+                        DOM.createGameFacileBtn.disabled = false;
+                        DOM.createGameDifficileBtn.disabled = false;
+                        // Démarrer l'écoute du lobby
+                        listenToLobby();
+                    } else {
+                        // L'utilisateur est déconnecté
+                        currentUserId = null;
+                        currentHostName = null;
+                        DOM.userIdDisplay.textContent = "Déconnecté";
+                        DOM.lobbyError.textContent = "Erreur de connexion au serveur.";
+                        DOM.createGameFacileBtn.disabled = true;
+                        DOM.createGameDifficileBtn.disabled = true;
+                        // Arrêter l'écoute du lobby
+                        if (unsubscribeLobbyListener) unsubscribeLobbyListener();
+                    }
+                });
+
+                // Tentative de connexion anonyme au chargement
+                (async function signIn() {
+                    try {
+                        DOM.userIdDisplay.textContent = "Connexion en cours...";
+                        await auth.signInAnonymously();
+                    } catch (error) {
+                        console.error("Erreur d'authentification anonyme:", error);
+                        DOM.lobbyError.textContent = "L'authentification a échoué. Vérifiez vos domaines autorisés.";
+                        DOM.userIdDisplay.textContent = "Échec de la connexion";
+                    }
+                })();
+            }
+
+            // --- GESTIONNAIRES D'ÉVÉNEMENTS ---
+            
+            function addEventListeners() {
+                // Lobby
+                DOM.createGameFacileBtn.addEventListener('click', () => showCategoryModal('create'));
+                DOM.createGameDifficileBtn.addEventListener('click', () => createGame('difficile', null)); // null = catégorie aléatoire
+                
+                // Jeu
+                DOM.lobbyReturnButton.addEventListener('click', leaveGame);
+                DOM.replayGameButton.addEventListener('click', promptForReplay); // Gère la difficulté
+                DOM.leaveGameBtn.addEventListener('click', leaveGame);
+                DOM.keyboard.addEventListener('click', handleKeyboardClick);
+                document.addEventListener('keydown', handlePhysicalKey);
+                // Modal
+                DOM.categoryModalCancelBtn.addEventListener('click', hideCategoryModal); 
+            }
+
+            // --- LOGIQUE DU MODAL DE CATÉGORIE ---
+            
+            function showCategoryModal(mode) {
+                DOM.categoryListContainer.innerHTML = '';
+                const allCategories = Object.keys(WORD_CATEGORIES);
+                
+                // Crée un bouton pour chaque catégorie
+                allCategories.forEach(categoryName => {
+                    const btn = document.createElement('button');
+                    btn.textContent = categoryName;
+                    btn.classList.add('category-selection-button');
+                    // Gère le clic selon si on crée ou on rejoue
+                    btn.onclick = () => {
+                        hideCategoryModal();
+                        if (mode === 'create') {
+                            createGame('facile', categoryName);
+                        } else if (mode === 'replay') {
+                            handleReplay(categoryName);
+                        }
+                    };
+                    DOM.categoryListContainer.appendChild(btn);
+                });
+                
+                DOM.categoryModal.classList.remove('hidden');
+                
+                // Cache l'écran approprié derrière le modal
+                if (mode === 'create') {
+                    DOM.lobbyContainer.classList.add('hidden');
+                } else {
+                    // Si on rejoue, on cache l'écran de fin de partie
+                    DOM.gameStatus.classList.add('hidden');
+                }
+            }
+
+            function hideCategoryModal() {
+                DOM.categoryModal.classList.add('hidden');
+                // Ré-affiche le bon écran
+                if (!currentGameId) { // Si on n'est pas en jeu
+                    DOM.lobbyContainer.classList.remove('hidden');
+                } else { // Si on est en jeu (et qu'on a annulé le replay)
+                    DOM.gameStatus.classList.remove('hidden');
+                }
+            }
+
+            // --- LOGIQUE DU LOBBY ET DES PARTIES (FIREBASE) ---
+
+            /**
+             * Supprime une partie du lobby ET de la base de données principale.
+             */
+            async function deleteGameFromLobby(gameId) {
+                if (!gameId) return;
+                try {
+                    // Supprime l'entrée du lobby (pour la visibilité)
+                    await db.collection("lobby").doc(gameId).delete();
+                    // Supprime les données réelles de la partie
+                    await db.collection("games").doc(gameId).delete();
+                } catch (error) {
+                    console.error("Erreur suppression partie:", error);
+                    DOM.lobbyError.textContent = "Impossible de supprimer la partie.";
+                }
+            }
+            
+            /**
+             * Écoute en temps réel la collection 'lobby' pour afficher les parties.
+             */
+            function listenToLobby() {
+                if (unsubscribeLobbyListener) unsubscribeLobbyListener();
+                
+                const lobbyCollectionRef = db.collection("lobby");
+                
+                unsubscribeLobbyListener = lobbyCollectionRef.onSnapshot((snapshot) => {
+                    DOM.activeGamesList.innerHTML = ''; // Vide la liste
+                    if (snapshot.empty) {
+                        DOM.activeGamesList.appendChild(DOM.noGamesMessage.cloneNode(true));
+                    } else {
+                        snapshot.forEach((docSnap) => {
+                            const game = docSnap.data();
+                            const gameId = docSnap.id;
+                            
+                            const item = document.createElement('div');
+                            item.classList.add('lobby-game-item');
+                            
+                            // Affiche le nom de l'hôte et la difficulté
+                            const text = document.createElement('span');
+                            const difficultyText = game.difficulty === 'facile' ? 'Facile' : 'Difficile';
+                            text.textContent = `Partie de ${game.hostName} (${difficultyText})`;
+                            item.appendChild(text);
+
+                            // Conteneur pour les boutons
+                            const buttonContainer = document.createElement('div');
+                            
+                            const joinBtn = document.createElement('button');
+                            joinBtn.textContent = "Rejoindre";
+
+                            // Si c'est notre propre partie
+                            if (game.hostId === currentUserId) {
+                                joinBtn.disabled = true;
+                                joinBtn.textContent = "Votre partie";
+                                
+                                // Ajoute un bouton Supprimer
+                                const deleteBtn = document.createElement('button');
+                                deleteBtn.textContent = "Supprimer";
+                                deleteBtn.classList.add('delete-button');
+                                deleteBtn.onclick = (e) => {
+                                    e.stopPropagation(); // Empêche le clic de se propager
+                                    deleteGameFromLobby(gameId);
+                                };
+                                buttonContainer.appendChild(joinBtn);
+                                buttonContainer.appendChild(deleteBtn);
+
+                            } else { // Si c'est la partie de quelqu'un d'autre
+                                joinBtn.onclick = () => joinGame(gameId);
+                                buttonContainer.appendChild(joinBtn);
+                            }
+                            item.appendChild(buttonContainer);
+                            DOM.activeGamesList.appendChild(item);
+                        });
+                    }
+                }, (error) => {
+                    console.error("Erreur d'écoute du lobby:", error);
+                    DOM.lobbyError.textContent = "Erreur de connexion au lobby.";
+                });
+            }
+
+            /**
+             * Crée une nouvelle partie dans Firestore et le Lobby.
+             */
+            async function createGame(difficulty, categoryName) {
+                if (!currentUserId || !difficulty) return;
+                // Désactive les boutons pour éviter les doubles clics
+                DOM.createGameFacileBtn.disabled = true;
+                DOM.createGameDifficileBtn.disabled = true;
+                DOM.lobbyError.textContent = "Création de la partie...";
+
+                try {
+                    // Choisit un mot (aléatoire si categoryName est null)
+                    const newWordData = getNewWord(categoryName, []); // [] = pas de mots déjà utilisés
+                    if (!newWordData || !newWordData.word) {
+                        throw new Error("Impossible de récupérer un mot pour cette catégorie.");
+                    }
+                    
+                    const wordToUse = newWordData.word.toUpperCase();
+                    
+                    // Crée le document principal de la partie
+                    const gameDocRef = await db.collection("games").add({
+                        hostId: currentUserId,
+                        word: wordToUse,
+                        category: newWordData.category,
+                        difficulty: difficulty, // Ajout de la difficulté
+                        guessedLetters: [],
+                        wrongGuesses: 0,
+                        status: "playing",
+                        playerList: [currentUserId], // L'hôte est le premier joueur
+                        playerScores: { // Initialise le score
+                            [currentUserId]: 0
+                        },
+                        currentPlayerTurn: currentUserId, // L'hôte commence
+                        starterIndex: 0, // Le joueur 0 commence
+                        usedWords: [wordToUse] // Initialise la liste des mots utilisés
+                    });
+                    
+                    const gameId = gameDocRef.id;
+
+                    // Crée l'entrée dans le lobby (visible par tous)
+                    await db.collection("lobby").doc(gameId).set({
+                        hostId: currentUserId,
+                        hostName: currentHostName,
+                        difficulty: difficulty, // Ajout de la difficulté
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    
+                    currentGameId = gameId;
+                    
+                    // Récupère l'état initial pour l'afficher
+                    const initialGameDoc = await gameDocRef.get();
+                    if (!initialGameDoc.exists) { // Utilise .exists (v8)
+                         throw new Error("La partie n'a pas pu être créée.");
+                    }
+                    const initialGameState = initialGameDoc.data();
+                    
+                    // Change l'affichage du Lobby vers le Jeu
+                    DOM.lobbyContainer.classList.add('hidden');
+                    DOM.gameContainer.classList.remove('hidden');
+                    generateKeyboard();
+                    updateUI(initialGameState); // Affiche l'état initial
+                    attachGameListener(gameId); // Commence à écouter les mises à jour
+                    
+                } catch (error) {
+                    console.error("Erreur de création de partie:", error);
+                    DOM.lobbyError.textContent = error.message || "Erreur de création.";
+                    DOM.createGameFacileBtn.disabled = false;
+                    DOM.createGameDifficileBtn.disabled = false;
+                    DOM.lobbyContainer.classList.remove('hidden'); // Reste sur le lobby en cas d'erreur
+                }
+            }
+            
+            /**
+             * Attache l'écouteur en temps réel à une partie spécifique.
+             */
+            function attachGameListener(gameId) {
+                if (unsubscribeGameListener) unsubscribeGameListener();
+                
+                const gameDocRef = db.collection("games").doc(gameId);
+                
+                unsubscribeGameListener = gameDocRef.onSnapshot((docSnap) => {
+                    // Vérifie si la partie existe
+                    if (!docSnap.exists) { // Utilise .exists (v8)
+                        DOM.lobbyError.textContent = "Cette partie n'existe plus.";
+                        leaveGame(); // Retourne au lobby
+                        return;
+                    }
+                    const gameState = docSnap.data();
+                    updateUI(gameState); // Met à jour l'interface avec les nouvelles données
+
+                }, (error) => {
+                    console.error("Erreur d'écoute (snapshot):", error);
+                    DOM.lobbyError.textContent = "Déconnecté de la partie.";
+                    leaveGame();
+                });
+            }
+
+            /**
+             * Permet à un joueur de rejoindre une partie existante.
+             */
+            async function joinGame(gameId) {
+                if (unsubscribeGameListener) unsubscribeGameListener();
+                if (unsubscribeLobbyListener) unsubscribeLobbyListener(); // Arrête d'écouter le lobby
+
+                currentGameId = gameId;
+                const gameDocRef = db.collection("games").doc(gameId);
+
+                try {
+                    // Transaction pour ajouter le joueur à la partie
+                    await db.runTransaction(async (transaction) => {
+                        const gameDocSnap = await transaction.get(gameDocRef);
+                        if (!gameDocSnap.exists) { // Utilise .exists (v8)
+                            throw new Error("La partie n'existe plus.");
+                        }
+                        const gameData = gameDocSnap.data();
+                        let playerList = gameData.playerList || [];
+                        let playerScores = gameData.playerScores || {}; 
+                        
+                        // Ajoute le joueur s'il n'y est pas déjà
+                        if (!playerList.includes(currentUserId)) {
+                            playerList.push(currentUserId);
+                        }
+                        // Initialise son score à 0 s'il n'existe pas
+                        if (!playerScores.hasOwnProperty(currentUserId)) { 
+                            playerScores[currentUserId] = 0; 
+                        }
+
+                        // Met à jour la partie dans la transaction
+                        transaction.update(gameDocRef, { 
+                            playerList: playerList,
+                            playerScores: playerScores 
+                        });
+                    });
+                    
+                    // Récupère l'état initial pour l'afficher
+                    const initialGameDoc = await gameDocRef.get();
+                    if (!initialGameDoc.exists) { // Utilise .exists (v8)
+                         throw new Error("La partie n'a pas pu être rejointe.");
+                    }
+                    const initialGameState = initialGameDoc.data();
+
+                    // Change l'affichage
+                    DOM.lobbyContainer.classList.add('hidden');
+                    DOM.gameContainer.classList.remove('hidden');
+                    generateKeyboard();
+                    updateUI(initialGameState); // Affiche l'état initial
+                    attachGameListener(gameId); // Commence à écouter
+
+                } catch (error) {
+                    console.error("Erreur en rejoignant la partie:", error);
+                    DOM.lobbyError.textContent = error.message || "Impossible de rejoindre la partie.";
+                    leaveGame(); // Retourne au lobby en cas d'erreur
+                }
+            }
+
+            /**
+             * Gère le départ d'un joueur (quitter ou supprimer).
+             */
+            async function leaveGame() {
+                // Arrête l'écouteur de la partie
+                if (unsubscribeGameListener) {
+                    unsubscribeGameListener();
+                    unsubscribeGameListener = null;
+                }
+
+                if (currentGameId && currentUserId) {
+                    try {
+                        const gameDocRef = db.collection("games").doc(currentGameId);
+                        
+                        await db.runTransaction(async (transaction) => {
+                            const gameDoc = await transaction.get(gameDocRef);
+                            if (!gameDoc.exists) return; // La partie n'existe déjà plus
+                            
+                            const gameData = gameDoc.data();
+                            
+                            // Si c'est l'hôte qui part
+                            if (gameData.hostId === currentUserId) {
+                                // Supprime la partie du lobby et de la base
+                                transaction.delete(db.collection("lobby").doc(currentGameId));
+                                transaction.delete(gameDocRef);
+                            } else {
+                                // Si c'est un invité qui part
+                                const newPlayerList = gameData.playerList.filter(uid => uid !== currentUserId);
+                                let newCurrentTurnUID = gameData.currentPlayerTurn;
+
+                                // Si c'était le tour du joueur qui part
+                                if (gameData.currentPlayerTurn === currentUserId && newPlayerList.length > 0) {
+                                    // Passe le tour au joueur suivant
+                                    const leavingPlayerIndex = gameData.playerList.indexOf(currentUserId);
+                                    const nextPlayerIndex = leavingPlayerIndex % newPlayerList.length; // Calcule le nouvel index
+                                    newCurrentTurnUID = newPlayerList[nextPlayerIndex];
+                                }
+                                
+                                // Met à jour la liste des joueurs et le tour
+                                transaction.update(gameDocRef, {
+                                    playerList: newPlayerList,
+                                    currentPlayerTurn: newCurrentTurnUID
+                                });
+                            }
+                        });
+
+                    } catch (e) {
+                        console.warn("N'a pas pu nettoyer la partie:", e.message);
+                    }
+                }
+
+                // Réinitialise l'interface
+                currentGameId = null;
+                DOM.gameContainer.classList.add('hidden');
+                DOM.lobbyContainer.classList.remove('hidden');
+                DOM.gameStatus.classList.add('hidden');
+                DOM.lobbyError.textContent = "";
+                DOM.createGameFacileBtn.disabled = false;
+                DOM.createGameDifficileBtn.disabled = false;
+                listenToLobby(); // Recommence à écouter le lobby
+            }
+
+            /**
+             * Gère le clic sur "Recommencer" (vérifie la difficulté).
+             */
+            async function promptForReplay() {
+                if (!currentGameId || !currentUserId) return;
+                
+                const gameDocRef = db.collection("games").doc(currentGameId);
+                let gameDoc;
+                try {
+                    gameDoc = await gameDocRef.get();
+                } catch(e) { console.error("Impossible de lire la partie:", e); return; }
+                
+                if (!gameDoc.exists) return; // Utilise .exists (v8)
+                const gameState = gameDoc.data();
+
+                // Seul l'hôte peut relancer
+                if (gameState.hostId !== currentUserId) {
+                    DOM.statusMessage.textContent = "Seul l'hôte peut recommencer.";
+                    DOM.replayGameButton.style.display = 'none';
+                    return;
+                }
+
+                // Si la partie était en 'facile', montre le modal
+                if (gameState.difficulty === 'facile') {
+                    showCategoryModal('replay');
+                } else {
+                    // Sinon (difficile), relance avec une catégorie aléatoire
+                    handleReplay(null);
+                }
+            }
+
+            /**
+             * Relance une nouvelle manche.
+             */
+            async function handleReplay(categoryName) {
+                if (!currentGameId || !currentUserId) return;
+
+                const gameDocRef = db.collection("games").doc(currentGameId);
+                let gameDoc;
+                try {
+                    gameDoc = await gameDocRef.get();
+                } catch(e) {
+                     console.error("Impossible de lire la partie:", e);
+                     return;
+                }
+                
+                const gameState = gameDoc.data();
+                if (!gameDoc.exists || gameState.hostId !== currentUserId) return; // Utilise .exists (v8)
+
+                const oldUsedWords = gameState.usedWords || [];
+                
+                // Choisit un nouveau mot, en évitant les anciens
+                const newWordData = getNewWord(categoryName, oldUsedWords); 
+                if (!newWordData || !newWordData.word) {
+                    console.error("Erreur lors du choix d'un nouveau mot pour le replay.");
+                    return;
+                }
+
+                const wordToUse = newWordData.word.toUpperCase();
+                let newUsedWordsList;
+                
+                // Si on a épuisé la catégorie, on réinitialise la liste
+                if (newWordData.needsReset) {
+                    newUsedWordsList = [wordToUse]; 
+                } else {
+                    newUsedWordsList = [...oldUsedWords, wordToUse];
+                }
+
+                // Logique pour inverser le joueur qui commence
+                const playerList = gameState.playerList;
+                const oldStarterIndex = gameState.starterIndex || 0;
+                const newStarterIndex = (oldStarterIndex + 1) % playerList.length;
+                const newStarterUID = playerList[newStarterIndex];
+                
+                // Conserve les scores
+                const newPlayerScores = gameState.playerScores || {}; 
+
+                // S'assure que tous les joueurs ont un score
+                playerList.forEach(uid => {
+                    if (!newPlayerScores.hasOwnProperty(uid)) {
+                        newPlayerScores[uid] = 0;
+                    }
+                });
+
+                try {
+                    // Met à jour la partie avec les nouvelles données
+                    await gameDocRef.update({
+                        word: wordToUse,
+                        category: newWordData.category, 
+                        guessedLetters: [],
+                        wrongGuesses: 0,
+                        status: "playing",
+                        playerScores: newPlayerScores, // Conserve les scores
+                        starterIndex: newStarterIndex, // Met à jour le starter
+                        currentPlayerTurn: newStarterUID, // Le nouveau starter joue
+                        usedWords: newUsedWordsList // Met à jour les mots utilisés
+                    });
+                    
+                    // Remet la partie dans le lobby (si elle avait été enlevée)
+                    await db.collection("lobby").doc(currentGameId).set({
+                        hostId: currentUserId,
+                        hostName: currentHostName,
+                        difficulty: gameState.difficulty, 
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    
+                } catch (error) {
+                    console.error("Erreur lors du redémarrage de la partie:", error);
+                }
+            }
+
+            /**
+             * Gère la tentative d'un joueur (clic sur une lettre).
+             */
+            async function handleGuess(letter) {
+                if (!currentGameId || !currentUserId) return;
+
+                const normalizedLetter = letter.toUpperCase();
+                const gameDocRef = db.collection("games").doc(currentGameId);
+
+                try {
+                    // Transaction pour garantir l'intégrité des données
+                    await db.runTransaction(async (transaction) => {
+                        const gameDocSnap = await transaction.get(gameDocRef);
+                        if (!gameDocSnap.exists) { // Utilise .exists (v8)
+                            throw "La partie n'existe plus.";
+                        }
+                        const gameState = gameDocSnap.data();
+                        
+                        // Vérifie si c'est bien le tour du joueur
+                        if (gameState.currentPlayerTurn !== currentUserId) {
+                            console.warn("Pas votre tour !");
+                            return; // Annule la transaction
+                        }
+                        
+                        // Vérifie si la lettre est valide
+                        if (!gameState || !gameState.word || gameState.guessedLetters.includes(normalizedLetter) || gameState.status !== 'playing') {
+                            return; // Annule
+                        }
+
+                        // Prépare les nouvelles données
+                        const newGuessedLetters = [...gameState.guessedLetters, normalizedLetter];
+                        let newWrongGuesses = gameState.wrongGuesses;
+                        let newStatus = gameState.status;
+                        
+                        // Copie sécurisée des scores
+                        // Correction pour le bug de mise à jour des scores
+                        const newScores = JSON.parse(JSON.stringify(gameState.playerScores || {}));
+                        
+                        const isCorrectGuess = gameState.word.includes(normalizedLetter);
+                        
+                        if (!isCorrectGuess) {
+                            newWrongGuesses++;
+                        }
+                        
+                        // Vérifie la victoire
+                        const wordToGuess = gameState.word.replace(/ /g, '');
+                        const allLettersGuessed = wordToGuess.split('').every(l => newGuessedLetters.includes(l));
+                        
+                        if (allLettersGuessed) {
+                            newStatus = 'won';
+                            // Attribue le point au joueur qui a gagné
+                            const currentScore = newScores[currentUserId] || 0;
+                            newScores[currentUserId] = currentScore + 1; 
+                        } else if (newWrongGuesses >= MAX_GUESSES) {
+                            newStatus = 'lost';
+                        }
+                        
+                        let nextPlayerUID = gameState.currentPlayerTurn; // Par défaut, on garde la main
+                        
+                        // Si on est en jeu ET qu'on s'est trompé
+                        if (newStatus === 'playing' && !isCorrectGuess) {
+                            const playerList = gameState.playerList;
+                            const numPlayers = playerList.length;
+                            
+                            if (numPlayers > 0) {
+                                const currentPlayerIndex = playerList.indexOf(currentUserId);
+                                
+                                if (currentPlayerIndex !== -1) { // Si on trouve le joueur
+                                    const nextPlayerIndex = (currentPlayerIndex + 1) % numPlayers;
+                                    nextPlayerUID = playerList[nextPlayerIndex];
+                                } else {
+                                    nextPlayerUID = playerList[0]; // Sécurité
+                                }
+                            }
+                        }
+                        // Si on a juste, nextPlayerUID reste le même (on rejoue)
+
+                        // Met à jour la partie
+                        transaction.update(gameDocRef, {
+                            guessedLetters: newGuessedLetters,
+                            wrongGuesses: newWrongGuesses,
+                            status: newStatus,
+                            currentPlayerTurn: nextPlayerUID,
+                            playerScores: newScores 
+                        });
+                    });
+                } catch (error) {
+                    console.error("Erreur lors de la tentative (transaction):", error);
+                }
+            }
+
+            // --- LOGIQUE D'AFFICHAGE (UI/VIEW) ---
+
+            /**
+             * Met à jour TOUTE l'interface du jeu basée sur l'état de la partie.
+             */
+            function updateUI(gameState) {
+                // Sécurité : ne rien afficher si les données essentielles manquent
+                if (!gameState || !gameState.word || !gameState.category) {
+                    console.warn("updateUI appelée avec des données de jeu incomplètes, en attente...");
+                    DOM.categoryP.classList.remove('hidden'); 
+                    DOM.categoryDisplay.textContent = "Chargement...";
+                    DOM.wordDisplay.innerHTML = '<div class="text-2xl text-yellow-300">Chargement du mot...</div>';
+                    return;
+                }
+                
+                // Gère l'affichage de la catégorie (Facile/Difficile)
+                if (gameState.difficulty === 'facile') {
+                    DOM.categoryP.classList.remove('hidden');
+                    DOM.categoryDisplay.textContent = gameState.category;
+                } else {
+                    DOM.categoryP.classList.add('hidden');
+                }
+
+                // Gère l'indicateur de tour
+                const isMyTurn = (gameState.currentPlayerTurn === currentUserId);
+                const gameIsOver = (gameState.status !== 'playing');
+
+                if (gameIsOver) {
+                    DOM.turnIndicator.textContent = "";
+                } else if (isMyTurn) {
+                    DOM.turnIndicator.textContent = "C'est votre tour !";
+                    DOM.turnIndicator.style.color = "#ffd700";
+                } else {
+                    const turnPlayerId = gameState.currentPlayerTurn;
+                    let turnPlayerHostName = "Autre joueur";
+                    if(turnPlayerId) {
+                         turnPlayerHostName = `Joueur_${turnPlayerId.substring(0, 6)}`;
+                    }
+                    DOM.turnIndicator.textContent = `Au tour de ${turnPlayerHostName}...`;
+                    DOM.turnIndicator.style.color = "#aaa";
+                }
+
+                // Met à jour le reste
+                DOM.guessesLeftSpan.textContent = MAX_GUESSES - gameState.wrongGuesses;
+                displayWord(gameState.word, gameState.guessedLetters);
+                updateKeyboard(gameState.guessedLetters, gameState.status, isMyTurn);
+                updateHangman(gameState.wrongGuesses);
+                updateScoreboard(gameState.playerList, gameState.playerScores, gameState.currentPlayerTurn); 
+                checkEndGame(gameState);
+            }
+
+            /**
+             * Affiche le tableau des scores en direct.
+             */
+            function updateScoreboard(playerList, playerScores, currentPlayerTurn) {
+                DOM.scoresList.innerHTML = ''; 
+                
+                if (!playerList || !playerScores) return;
+
+                playerList.forEach(uid => {
+                    const hostName = `Joueur_${uid.substring(0, 6)}`;
+                    const score = playerScores[uid] || 0;
+                    
+                    const scoreElement = document.createElement('div');
+                    scoreElement.classList.add('flex', 'justify-between', 'p-1');
+                    
+                    const nameSpan = document.createElement('span');
+                    nameSpan.textContent = `${hostName}:`;
+                    
+                    const scoreSpan = document.createElement('span');
+                    scoreSpan.textContent = score;
+                    scoreSpan.classList.add('font-bold');
+
+                    // Met en surbrillance le joueur dont c'est le tour
+                    if (uid === currentPlayerTurn) {
+                        nameSpan.classList.add('text-yellow-300');
+                        scoreElement.classList.add('bg-gray-700', 'bg-opacity-50', 'rounded');
+                    }
+                    
+                    scoreElement.appendChild(nameSpan);
+                    scoreElement.appendChild(scoreSpan);
+                    DOM.scoresList.appendChild(scoreElement);
+                });
+            }
+
+            /**
+             * Choisit un nouveau mot, en s'assurant qu'il n'a pas été utilisé.
+             */
+            function getNewWord(categoryName = null, usedWords = []) {
+                let categoryToPickFrom = categoryName;
+                
+                // Si aucune catégorie n'est fournie (mode Difficile ou replay Difficile)
+                if (!categoryToPickFrom) {
+                    const allCategories = Object.keys(WORD_CATEGORIES);
+                    categoryToPickFrom = allCategories[Math.floor(Math.random() * allCategories.length)];
+                }
+                
+                const wordList = WORD_CATEGORIES[categoryToPickFrom];
+                if (!wordList || wordList.length === 0) {
+                    console.error(`Catégorie vide ou introuvable: ${categoryToPickFrom}`);
+                    return getNewWord(null, usedWords); // Tente avec une catégorie aléatoire
+                }
+
+                let needsReset = false;
+                
+                // Filtre les mots déjà utilisés
+                let availableWords = wordList.filter(word => !usedWords.includes(word.toUpperCase()));
+                
+                // Si on a épuisé tous les mots de la catégorie
+                if (availableWords.length === 0) {
+                    console.warn(`Toute la catégorie "${categoryToPickFrom}" a été jouée. Réinitialisation...`);
+                    availableWords = wordList; // On reprend la liste complète
+                    needsReset = true; // On signale qu'il faut réinitialiser la liste des mots
+                }
+                
+                // Choisit un mot au hasard parmi les mots disponibles
+                const word = availableWords[Math.floor(Math.random() * availableWords.length)];
+                
+                return { word: word, category: categoryToPickFrom, needsReset: needsReset };
+            }
+
+            /**
+             * Affiche le mot à deviner (les _ _ _).
+             */
+            function displayWord(currentWord, guessedLetters) {
+                DOM.wordDisplay.innerHTML = '';
+                const words = currentWord.split(' ');
+                
+                words.forEach((word, index) => {
+                    // Crée un conteneur pour ce mot (pour la gestion des retours à la ligne)
+                    const wordContainer = document.createElement('div');
+                    wordContainer.classList.add('flex', 'flex-wrap', 'justify-center', 'gap-2', 'md:gap-3');
+                    
+                    // Ajoute un espace visible entre les mots
+                    if (index > 0) {
+                        const spaceElement = document.createElement('div');
+                        spaceElement.classList.add('w-4', 'md:w-8'); // Espace
+                        DOM.wordDisplay.appendChild(spaceElement);
+                    }
+                    
+                    word.split('').forEach(letter => {
+                        const letterElement = document.createElement('div');
+                        letterElement.classList.add('text-center', 'text-2xl', 'md:text-4xl', 'word-display-letter');
+                        
+                        if (guessedLetters.includes(letter)) {
+                            letterElement.textContent = letter;
+                        } else {
+                            letterElement.textContent = '_';
+                        }
+                        wordContainer.appendChild(letterElement);
+                    });
+                    DOM.wordDisplay.appendChild(wordContainer);
+                });
+            }
+
+            /**
+             * Génère le clavier A-Z.
+             */
+            function generateKeyboard() {
+                DOM.keyboard.innerHTML = '';
+                const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+                
+                alphabet.split('').forEach(letter => {
+                    const keyButton = document.createElement('button');
+                    keyButton.textContent = letter;
+                    keyButton.classList.add('key', 'font-bold', 'text-lg', 'w-8', 'h-10', 'md:w-12', 'md:h-12', 'rounded-md', 'm-1');
+                    keyButton.dataset.letter = letter;
+                    DOM.keyboard.appendChild(keyButton);
+                });
+            }
+
+            /**
+             * Met à jour l'état du clavier (activé/désactivé).
+             */
+            function updateKeyboard(guessedLetters, gameStatus, isMyTurn) {
+                const gameIsOver = (gameStatus !== 'playing');
+                
+                DOM.keyboard.querySelectorAll('button').forEach(keyButton => {
+                    // Désactive si:
+                    // 1. La partie est finie
+                    // 2. Ce n'est pas mon tour
+                    // 3. La lettre a déjà été jouée
+                    keyButton.disabled = gameIsOver || !isMyTurn || guessedLetters.includes(keyButton.dataset.letter);
+                });
+            }
+            
+            /**
+             * Affiche les parties du pendu en fonction des erreurs.
+             */
+            function updateHangman(wrongGuesses) {
+                resetHangman(); // Cache tout
+                // Affiche les parties une par une
+                for (let i = 0; i < wrongGuesses; i++) {
+                    if (i < DOM.hangmanParts.length) {
+                        DOM.hangmanParts[i].style.visibility = 'visible';
+                    }
+                }
+            }
+
+            function resetHangman() {
+                DOM.hangmanParts.forEach(part => {
+                    part.style.visibility = 'hidden';
+                });
+            }
+
+            /**
+             * Vérifie si la partie est terminée (gagnée ou perdue) et affiche l'écran de fin.
+             */
+            async function checkEndGame(gameState) {
+                // Si on joue, cache l'écran de fin
+                if (gameState.status === 'playing') {
+                    DOM.gameStatus.classList.add('hidden');
+                    return;
+                }
+                
+                // Si la partie est finie, l'hôte la supprime du lobby
+                if (gameState.hostId === currentUserId) {
+                    try {
+                        await db.collection("lobby").doc(currentGameId).delete();
+                    } catch(e) {
+                        console.warn("N'a pas pu supprimer du lobby:", e.message);
+                    }
+                }
+                
+                // Remplit le tableau des scores finaux
+                DOM.finalScoresList.innerHTML = '';
+                const { playerList, playerScores } = gameState;
+                if (playerList && playerScores) {
+                     playerList.forEach(uid => {
+                        const hostName = `Joueur_${uid.substring(0, 6)}`;
+                        const score = playerScores[uid] || 0;
+                        
+                        const scoreElement = document.createElement('div');
+                        scoreElement.classList.add('flex', 'justify-between', 'p-1');
+                        
+                        const nameSpan = document.createElement('span');
+                        nameSpan.textContent = `${hostName}:`;
+                        
+                        const scoreSpan = document.createElement('span');
+                        scoreSpan.textContent = score;
+                        scoreSpan.classList.add('font-bold');
+                        
+                        scoreElement.appendChild(nameSpan);
+                        scoreElement.appendChild(scoreSpan);
+                        DOM.finalScoresList.appendChild(scoreElement);
+                    });
+                }
+                
+                // Affiche l'écran de fin
+                DOM.gameStatus.classList.remove('hidden');
+                
+                // Affiche le bon message
+                if (gameState.status === 'won') {
+                    DOM.statusMessage.textContent = 'Gagné ! Tu es sauvé !';
+                    DOM.statusMessage.classList.remove('text-red-500');
+                    DOM.statusMessage.classList.add('text-green-500');
+                    DOM.correctWordDisplay.textContent = `Tu as deviné : ${gameState.word}`;
+                } else if (gameState.status === 'lost') {
+                    DOM.statusMessage.textContent = 'Perdu ! Direction l\'Extermination !';
+                    DOM.statusMessage.classList.remove('text-green-500');
+                    DOM.statusMessage.classList.add('text-red-500');
+                    DOM.correctWordDisplay.textContent = `Le mot était : ${gameState.word}`;
+                }
+                // Affiche "Recommencer" seulement pour l'hôte
+                DOM.replayGameButton.style.display = (gameState.hostId === currentUserId) ? 'block' : 'none';
+            }
+
+            // --- GESTION DES CLICS CLAVIER ---
+            
+            function handleKeyboardClick(e) {
+                if (e.target.tagName === 'BUTTON' && e.target.dataset.letter) {
+                    if (!e.target.disabled) {
+                        handleGuess(e.target.dataset.letter);
+                    }
+                }
+            }
+
+            function handlePhysicalKey(e) {
+                // N'exécute rien si on est dans le lobby ou sur l'écran de fin
+                if (DOM.gameContainer.classList.contains('hidden') || !DOM.gameStatus.classList.contains('hidden')) {
+                    return; 
+                }
+                // Si la touche est une seule lettre
+                if (e.key.length === 1 && e.key.match(/[a-z]/i)) {
+                    const letter = e.key.toUpperCase();
+                    const keyButton = DOM.keyboard.querySelector(`[data-letter="${letter}"]`);
+                    // Simule un clic sur le bouton (s'il n'est pas désactivé)
+                    if (keyButton && !keyButton.disabled) {
+                        handleGuess(letter);
+                    }
+                }
+            }
+
+        }); // FIN DE L'ÉCOUTEUR DOMContentLoaded
+    </script>
+</body>
+</html>
