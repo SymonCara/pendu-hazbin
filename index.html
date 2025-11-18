@@ -656,30 +656,38 @@
                 DOM.authError.textContent = "";
 
                 // Création d'un email fictif pour utiliser l'auth email/pass de Firebase
-                // Note: Pour un vrai projet, on utiliserait une vraie adresse email.
                 const fakeEmail = `${pseudo.toLowerCase().replace(/[^a-z0-9]/g, '')}@hazbin.game`;
 
                 try {
-                    // Tentative de connexion
+                    // Tentative de connexion standard
                     await auth.signInWithEmailAndPassword(fakeEmail, password);
-                    // La redirection se fait via onAuthStateChanged
                 } catch (error) {
-                    // Si l'utilisateur n'existe pas, on le crée
+                    
+                    // GESTION DES ERREURS SPÉCIFIQUES
+                    
+                    // 1. Si le compte n'existe pas, on le crée
                     if (error.code === 'auth/user-not-found') {
                         try {
                             const userCredential = await auth.createUserWithEmailAndPassword(fakeEmail, password);
-                            // Mise à jour du profil avec le pseudo
-                            await userCredential.user.updateProfile({
-                                displayName: pseudo
-                            });
-                            // Force la mise à jour locale du nom
+                            await userCredential.user.updateProfile({ displayName: pseudo });
                             currentHostName = pseudo; 
                             DOM.lobbyUsername.textContent = pseudo;
                         } catch (createError) {
-                            console.error("Erreur création:", createError);
-                            DOM.authError.textContent = "Erreur lors de la création du compte: " + createError.message;
+                            // Si la création échoue aussi car le provider est désactivé (cas de ton erreur)
+                            if (createError.code === 'auth/operation-not-allowed') {
+                                await fallbackAnonymousLogin(pseudo);
+                            } else {
+                                console.error("Erreur création:", createError);
+                                DOM.authError.textContent = "Erreur: " + createError.message;
+                            }
                         }
-                    } else if (error.code === 'auth/wrong-password') {
+                    } 
+                    // 2. Si l'option Email/Pass est désactivée dans la console (Ton cas actuel)
+                    else if (error.code === 'auth/operation-not-allowed') {
+                        await fallbackAnonymousLogin(pseudo);
+                    } 
+                    // 3. Mauvais mot de passe
+                    else if (error.code === 'auth/wrong-password') {
                         DOM.authError.textContent = "Mauvais mot de passe pour ce pseudo !";
                     } else {
                         console.error("Erreur connexion:", error);
@@ -688,6 +696,27 @@
                 } finally {
                     DOM.authSubmitBtn.disabled = false;
                     DOM.authSubmitBtn.textContent = "Entrer en Enfer";
+                }
+            }
+
+            // Fonction de secours : Connexion Anonyme mais avec le pseudo
+            async function fallbackAnonymousLogin(pseudo) {
+                try {
+                    DOM.authSubmitBtn.textContent = "Connexion Invité...";
+                    await auth.signInAnonymously();
+                    // Une fois connecté, on met à jour le nom
+                    if (auth.currentUser) {
+                        await auth.currentUser.updateProfile({ displayName: pseudo });
+                        // Force la mise à jour locale
+                        currentHostName = pseudo;
+                        DOM.lobbyUsername.textContent = pseudo;
+                        // On affiche un petit message informatif qui disparaîtra
+                        DOM.authError.style.color = "orange";
+                        DOM.authError.textContent = "Mode Invité activé (Serveur non configuré).";
+                    }
+                } catch (anonError) {
+                    console.error("Erreur fallback:", anonError);
+                    DOM.authError.textContent = "Impossible de se connecter (même en invité).";
                 }
             }
 
