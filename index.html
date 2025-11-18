@@ -41,7 +41,7 @@
             text-shadow: 0 0 5px #ff0000, 0 0 10px #ff0000, 0 0 15px #ff4d4d;
             animation: pulse-text-glow 2.5s ease-in-out infinite;
         }
-        .game-container, .lobby-container, .modal-container {
+        .game-container, .lobby-container, .modal-container, .auth-container {
             backdrop-filter: blur(5px);
             background-color: rgba(30, 0, 0, 0.6);
             border: 2px solid #ff0000;
@@ -230,7 +230,6 @@
             scrollbar-width: none;
             -ms-overflow-style: none;
         }
-        /* Style pour la description du ship à la fin */
         .word-description {
             display: block;
             font-size: 0.8em;
@@ -238,15 +237,54 @@
             margin-top: 0.5rem;
             font-style: italic;
         }
+        /* Styles pour l'authentification */
+        .auth-input {
+            background-color: rgba(0, 0, 0, 0.6);
+            border: 1px solid #ff0000;
+            color: #ffd700;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            width: 100%;
+            margin-bottom: 1rem;
+            font-family: 'Special Elite', monospace;
+            outline: none;
+        }
+        .auth-input:focus {
+            box-shadow: 0 0 10px #ff0000;
+            border-color: #ffd700;
+        }
+        .auth-input::placeholder {
+            color: #995555;
+        }
 
     </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-2">
 
-    <!-- Lobby (visible par défaut) -->
-    <div id="lobby-container" class="lobby-container w-full max-w-md mx-auto p-6 md:p-8 rounded-lg text-center">
-        <h1 class="title-font text-5xl md:text-6xl mb-6">Rejoindre l'Enfer</h1>
+    <!-- NOUVEAU : Écran de Connexion (visible par défaut) -->
+    <div id="auth-container" class="auth-container w-full max-w-md mx-auto p-6 md:p-8 rounded-lg text-center">
+        <h1 class="title-font text-5xl md:text-6xl mb-6">Check-In</h1>
+        <p class="mb-6 text-gray-300">Identifie-toi, âme perdue...</p>
         
+        <input type="text" id="auth-pseudo" class="auth-input" placeholder="Pseudo (ex: AngelDust69)" maxlength="15">
+        <input type="password" id="auth-password" class="auth-input" placeholder="Mot de passe secret">
+        
+        <button id="auth-submit-btn" class="lobby-button w-full py-3 px-4 rounded-lg text-xl">
+            Entrer en Enfer
+        </button>
+        
+        <p id="auth-error" class="lobby-error-message mt-4 font-bold"></p>
+        <p class="text-xs text-gray-500 mt-2">Si le compte n'existe pas, il sera créé automatiquement.</p>
+    </div>
+
+    <!-- Lobby (caché par défaut maintenant) -->
+    <div id="lobby-container" class="lobby-container w-full max-w-md mx-auto p-6 md:p-8 rounded-lg text-center hidden">
+        <h1 class="title-font text-5xl md:text-6xl mb-6">Hall de l'Hôtel</h1>
+        
+        <!-- Info Joueur -->
+        <p class="text-yellow-300 mb-4">Bienvenue, <span id="lobby-username" class="font-bold text-white">...</span></p>
+        <button id="logout-btn" class="text-xs text-red-400 underline mb-6 hover:text-white">Se déconnecter</button>
+
         <div class="flex gap-4 mb-4">
             <button id="create-game-facile-btn" class="lobby-button difficulty-button w-1/2 py-3 px-4 rounded-lg" disabled>
                 Créer (Facile)
@@ -264,7 +302,6 @@
         </div>
         
         <p id="lobby-error" class="lobby-error-message mt-4 font-bold"></p>
-        <p id="user-id-display" class="user-id-display mt-4">Initialisation...</p>
     </div>
 
     <!-- Jeu (caché par défaut) -->
@@ -494,7 +531,6 @@
                 "GRAVITY", "PISS", "SPEEDRUN VERS LA REDEMPTION", "N OUBLIE PAS", "VOX POPULI",
                 "VOX DEI", "L AMOUR EN BOUTEILLE", "FACILE"
             ],
-            // Ajout dynamique de la catégorie Ships
             "Ships (Couples)": SHIP_DATA_RAW.map(item => item.ship.toUpperCase())
         };
         
@@ -510,13 +546,24 @@
             let unsubscribeLobbyListener = null;
             
             const DOM = {
+                // Auth
+                authContainer: document.getElementById('auth-container'),
+                authPseudo: document.getElementById('auth-pseudo'),
+                authPassword: document.getElementById('auth-password'),
+                authSubmitBtn: document.getElementById('auth-submit-btn'),
+                authError: document.getElementById('auth-error'),
+                
+                // Lobby
                 lobbyContainer: document.getElementById('lobby-container'),
+                lobbyUsername: document.getElementById('lobby-username'), // Nouveau
+                logoutBtn: document.getElementById('logout-btn'),       // Nouveau
                 createGameFacileBtn: document.getElementById('create-game-facile-btn'),
                 createGameDifficileBtn: document.getElementById('create-game-difficile-btn'),
                 activeGamesList: document.getElementById('active-games-list'),
                 noGamesMessage: document.getElementById('no-games-message'),
                 lobbyError: document.getElementById('lobby-error'),
-                userIdDisplay: document.getElementById('user-id-display'),
+                
+                // Game
                 gameContainer: document.getElementById('game-container'),
                 leaveGameBtn: document.getElementById('leave-game-btn'),
                 categoryP: document.getElementById('category-p'),
@@ -533,6 +580,8 @@
                 finalScoresList: document.getElementById('final-scores-list'), 
                 replayGameButton: document.getElementById('replay-game-button'),
                 lobbyReturnButton: document.getElementById('lobby-return-button'),
+                
+                // Modal
                 categoryModal: document.getElementById('category-selection-modal'),
                 categoryListContainer: document.getElementById('category-list-container'),
                 categoryModalCancelBtn: document.getElementById('category-modal-cancel-btn')
@@ -543,48 +592,116 @@
                 auth = firebase.auth();
                 db = firebase.firestore();
                 
-                DOM.userIdDisplay.textContent = "Initialisation terminée. Connexion...";
+                // DOM.userIdDisplay.textContent = "Initialisation terminée."; // Supprimé car élément retiré
                 initializeAuth();
                 addEventListeners();
             } catch (e) {
                 console.error("Erreur d'initialisation Firebase:", e);
-                DOM.userIdDisplay.textContent = "Erreur critique.";
-                DOM.lobbyError.textContent = "Impossible d'initialiser Firebase.";
+                DOM.authError.textContent = "Impossible d'initialiser Firebase.";
             }
 
             function initializeAuth() {
+                // Écoute les changements d'état (connexion/déconnexion)
                 auth.onAuthStateChanged((user) => {
                     if (user) {
                         currentUserId = user.uid;
-                        currentHostName = `Joueur_${currentUserId.substring(0, 6)}`;
-                        DOM.userIdDisplay.textContent = `Connecté en tant que: ${currentHostName}`;
-                        DOM.lobbyError.textContent = "";
+                        // Utilise le display name s'il existe, sinon une valeur par défaut temporaire
+                        currentHostName = user.displayName || DOM.authPseudo.value || `Joueur_${user.uid.substring(0,4)}`;
+                        
+                        // Met à jour l'UI
+                        DOM.lobbyUsername.textContent = currentHostName;
+                        DOM.authError.textContent = "";
+                        
+                        // Affiche le lobby, cache le login
+                        DOM.authContainer.classList.add('hidden');
+                        DOM.lobbyContainer.classList.remove('hidden');
+                        
                         DOM.createGameFacileBtn.disabled = false;
                         DOM.createGameDifficileBtn.disabled = false;
+                        
                         listenToLobby();
                     } else {
                         currentUserId = null;
                         currentHostName = null;
-                        DOM.userIdDisplay.textContent = "Déconnecté";
+                        
+                        // Affiche le login, cache le lobby
+                        DOM.authContainer.classList.remove('hidden');
+                        DOM.lobbyContainer.classList.add('hidden');
+                        DOM.gameContainer.classList.add('hidden');
+                        
                         DOM.createGameFacileBtn.disabled = true;
                         DOM.createGameDifficileBtn.disabled = true;
+                        
                         if (unsubscribeLobbyListener) unsubscribeLobbyListener();
                     }
                 });
+            }
 
-                (async function signIn() {
-                    try {
-                        DOM.userIdDisplay.textContent = "Connexion en cours...";
-                        await auth.signInAnonymously();
-                    } catch (error) {
-                        console.error("Erreur d'authentification:", error);
-                        DOM.lobbyError.textContent = "Échec connexion.";
-                        DOM.userIdDisplay.textContent = "Échec de la connexion";
+            // Nouvelle fonction de gestion de connexion
+            async function handleAuth() {
+                const pseudo = DOM.authPseudo.value.trim();
+                const password = DOM.authPassword.value;
+
+                if (pseudo.length < 3) {
+                    DOM.authError.textContent = "Le pseudo est trop court (min 3 car).";
+                    return;
+                }
+                if (password.length < 6) {
+                    DOM.authError.textContent = "Le mot de passe est trop court (min 6 car).";
+                    return;
+                }
+
+                DOM.authSubmitBtn.disabled = true;
+                DOM.authSubmitBtn.textContent = "Vérification...";
+                DOM.authError.textContent = "";
+
+                // Création d'un email fictif pour utiliser l'auth email/pass de Firebase
+                // Note: Pour un vrai projet, on utiliserait une vraie adresse email.
+                const fakeEmail = `${pseudo.toLowerCase().replace(/[^a-z0-9]/g, '')}@hazbin.game`;
+
+                try {
+                    // Tentative de connexion
+                    await auth.signInWithEmailAndPassword(fakeEmail, password);
+                    // La redirection se fait via onAuthStateChanged
+                } catch (error) {
+                    // Si l'utilisateur n'existe pas, on le crée
+                    if (error.code === 'auth/user-not-found') {
+                        try {
+                            const userCredential = await auth.createUserWithEmailAndPassword(fakeEmail, password);
+                            // Mise à jour du profil avec le pseudo
+                            await userCredential.user.updateProfile({
+                                displayName: pseudo
+                            });
+                            // Force la mise à jour locale du nom
+                            currentHostName = pseudo; 
+                            DOM.lobbyUsername.textContent = pseudo;
+                        } catch (createError) {
+                            console.error("Erreur création:", createError);
+                            DOM.authError.textContent = "Erreur lors de la création du compte: " + createError.message;
+                        }
+                    } else if (error.code === 'auth/wrong-password') {
+                        DOM.authError.textContent = "Mauvais mot de passe pour ce pseudo !";
+                    } else {
+                        console.error("Erreur connexion:", error);
+                        DOM.authError.textContent = "Erreur: " + error.message;
                     }
-                })();
+                } finally {
+                    DOM.authSubmitBtn.disabled = false;
+                    DOM.authSubmitBtn.textContent = "Entrer en Enfer";
+                }
             }
 
             function addEventListeners() {
+                // Auth Listeners
+                DOM.authSubmitBtn.addEventListener('click', handleAuth);
+                DOM.logoutBtn.addEventListener('click', () => auth.signOut());
+                
+                // Support touche Entrée pour le login
+                DOM.authPassword.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') handleAuth();
+                });
+
+                // Lobby & Game Listeners
                 DOM.createGameFacileBtn.addEventListener('click', () => showCategoryModal('create'));
                 DOM.createGameDifficileBtn.addEventListener('click', () => createGame('difficile', null));
                 DOM.lobbyReturnButton.addEventListener('click', leaveGame);
@@ -659,6 +776,7 @@
                             
                             const text = document.createElement('span');
                             const difficultyText = game.difficulty === 'facile' ? 'Facile' : 'Difficile';
+                            // Utilise le nom de l'hôte stocké dans le lobby
                             text.textContent = `${game.hostName} (${difficultyText})`;
                             item.appendChild(text);
 
@@ -695,8 +813,7 @@
                 if (!currentUserId || !difficulty) return;
                 DOM.createGameFacileBtn.disabled = true;
                 DOM.createGameDifficileBtn.disabled = true;
-                DOM.lobbyError.textContent = "Création...";
-
+                
                 try {
                     const newWordData = getNewWord(categoryName, []);
                     if (!newWordData || !newWordData.word) {
@@ -709,13 +826,13 @@
                         hostId: currentUserId,
                         word: wordToUse,
                         category: newWordData.category,
-                        // Ajout de la description du mot (pour les Ships)
                         wordDescription: newWordData.description || null, 
                         difficulty: difficulty,
                         guessedLetters: [],
                         wrongGuesses: 0,
                         status: "playing",
                         playerList: [currentUserId],
+                        playerNames: { [currentUserId]: currentHostName }, // Sauvegarde le nom
                         playerScores: { [currentUserId]: 0 },
                         currentPlayerTurn: currentUserId,
                         starterIndex: 0,
@@ -780,6 +897,7 @@
                         const gameData = gameDocSnap.data();
                         let playerList = gameData.playerList || [];
                         let playerScores = gameData.playerScores || {}; 
+                        let playerNames = gameData.playerNames || {};
                         
                         if (!playerList.includes(currentUserId)) {
                             playerList.push(currentUserId);
@@ -787,10 +905,13 @@
                         if (!playerScores.hasOwnProperty(currentUserId)) { 
                             playerScores[currentUserId] = 0; 
                         }
+                        // Met à jour ou ajoute le nom du joueur
+                        playerNames[currentUserId] = currentHostName;
 
                         transaction.update(gameDocRef, { 
                             playerList: playerList,
-                            playerScores: playerScores 
+                            playerScores: playerScores,
+                            playerNames: playerNames
                         });
                     });
                     
@@ -919,7 +1040,6 @@
                     await gameDocRef.update({
                         word: wordToUse,
                         category: newWordData.category,
-                        // Mise à jour de la description pour la nouvelle partie
                         wordDescription: newWordData.description || null, 
                         guessedLetters: [],
                         wrongGuesses: 0,
@@ -1025,6 +1145,9 @@
                 const isMyTurn = (gameState.currentPlayerTurn === currentUserId);
                 const gameIsOver = (gameState.status !== 'playing');
 
+                // Récupération des noms des joueurs depuis l'état du jeu (ou fallback)
+                const playerNames = gameState.playerNames || {};
+
                 if (gameIsOver) {
                     DOM.turnIndicator.textContent = "";
                 } else if (isMyTurn) {
@@ -1032,11 +1155,11 @@
                     DOM.turnIndicator.style.color = "#ffd700";
                 } else {
                     const turnPlayerId = gameState.currentPlayerTurn;
-                    let turnPlayerHostName = "Autre joueur";
-                    if(turnPlayerId) {
-                         turnPlayerHostName = `Joueur_${turnPlayerId.substring(0, 6)}`;
+                    let turnPlayerName = "Autre joueur";
+                    if (turnPlayerId) {
+                         turnPlayerName = playerNames[turnPlayerId] || `Joueur_${turnPlayerId.substring(0, 6)}`;
                     }
-                    DOM.turnIndicator.textContent = `Au tour de ${turnPlayerHostName}...`;
+                    DOM.turnIndicator.textContent = `Au tour de ${turnPlayerName}...`;
                     DOM.turnIndicator.style.color = "#aaa";
                 }
 
@@ -1044,23 +1167,23 @@
                 displayWord(gameState.word, gameState.guessedLetters);
                 updateKeyboard(gameState.guessedLetters, gameState.status, isMyTurn);
                 updateHangman(gameState.wrongGuesses);
-                updateScoreboard(gameState.playerList, gameState.playerScores, gameState.currentPlayerTurn); 
+                updateScoreboard(gameState.playerList, gameState.playerScores, gameState.currentPlayerTurn, playerNames); 
                 checkEndGame(gameState);
             }
 
-            function updateScoreboard(playerList, playerScores, currentPlayerTurn) {
+            function updateScoreboard(playerList, playerScores, currentPlayerTurn, playerNames = {}) {
                 DOM.scoresList.innerHTML = ''; 
                 if (!playerList || !playerScores) return;
 
                 playerList.forEach(uid => {
-                    const hostName = `Joueur_${uid.substring(0, 6)}`;
+                    const name = playerNames[uid] || `Joueur_${uid.substring(0, 6)}`;
                     const score = playerScores[uid] || 0;
                     
                     const scoreElement = document.createElement('div');
                     scoreElement.classList.add('flex', 'justify-between', 'p-1');
                     
                     const nameSpan = document.createElement('span');
-                    nameSpan.textContent = `${hostName}:`;
+                    nameSpan.textContent = `${name}:`;
                     
                     const scoreSpan = document.createElement('span');
                     scoreSpan.textContent = score;
@@ -1100,7 +1223,6 @@
                 
                 const word = availableWords[Math.floor(Math.random() * availableWords.length)];
                 
-                // LOGIQUE SHIP: Trouver la description si c'est un ship
                 let description = null;
                 if (categoryToPickFrom === "Ships (Couples)") {
                     const shipObj = SHIP_DATA_RAW.find(s => s.ship.toUpperCase() === word);
@@ -1183,15 +1305,15 @@
                 }
                 
                 DOM.finalScoresList.innerHTML = '';
-                const { playerList, playerScores } = gameState;
+                const { playerList, playerScores, playerNames } = gameState; // Récupère aussi les noms
                 if (playerList && playerScores) {
                      playerList.forEach(uid => {
-                        const hostName = `Joueur_${uid.substring(0, 6)}`;
+                        const name = (playerNames && playerNames[uid]) ? playerNames[uid] : `Joueur_${uid.substring(0, 6)}`;
                         const score = playerScores[uid] || 0;
                         const scoreElement = document.createElement('div');
                         scoreElement.classList.add('flex', 'justify-between', 'p-1');
                         const nameSpan = document.createElement('span');
-                        nameSpan.textContent = `${hostName}:`;
+                        nameSpan.textContent = `${name}:`;
                         const scoreSpan = document.createElement('span');
                         scoreSpan.textContent = score;
                         scoreSpan.classList.add('font-bold');
@@ -1203,7 +1325,6 @@
                 
                 DOM.gameStatus.classList.remove('hidden');
                 
-                // Préparation du texte du mot correct + description si présente
                 let wordText = gameState.word;
                 if (gameState.wordDescription) {
                     wordText += `\n(${gameState.wordDescription})`;
