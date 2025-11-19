@@ -35,6 +35,13 @@
             0%, 100% { border-color: #ff0000; box-shadow: 0 0 20px #ff0000; }
             50% { border-color: #ff4d4d; box-shadow: 0 0 30px #ff4d4d, 0 0 10px #ff0000; }
         }
+        /* Animation pour l'apparition d'Alastor */
+        @keyframes appear-dramatic {
+            0% { transform: scale(0) rotate(-10deg); opacity: 0; }
+            60% { transform: scale(1.1) rotate(5deg); opacity: 1; }
+            100% { transform: scale(1) rotate(0); }
+        }
+
         .title-font {
             font-family: 'Cinzel Decorative', cursive;
             color: #ff0000;
@@ -256,7 +263,7 @@
         .auth-input::placeholder {
             color: #995555;
         }
-        /* Styles pour le Classement (Leaderboard) */
+        /* Styles pour le Classement */
         .leaderboard-container {
             margin-top: 1.5rem;
             border-top: 1px solid #555;
@@ -288,6 +295,16 @@
         .rank-1 { background-color: #ffd700; color: #000; box-shadow: 0 0 5px #ffd700; }
         .rank-2 { background-color: #c0c0c0; color: #000; }
         .rank-3 { background-color: #cd7f32; color: #000; }
+
+        /* Style pour l'image de défaite */
+        .demon-image {
+            max-height: 250px;
+            width: auto;
+            margin-bottom: 1rem;
+            animation: appear-dramatic 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            filter: drop-shadow(0 0 20px #ff0000);
+            border-radius: 10px;
+        }
 
     </style>
 </head>
@@ -333,7 +350,7 @@
             <p id="no-games-message" class="text-gray-400 p-4">Aucune partie en cours...</p>
         </div>
         
-        <!-- NOUVEAU : CLASSEMENT -->
+        <!-- CLASSEMENT -->
         <div class="leaderboard-container">
             <h2 class="text-xl text-yellow-500 mb-2 title-font">Overlords (Classement)</h2>
             <div id="leaderboard-list" class="bg-black bg-opacity-40 rounded p-2 text-left max-h-48 overflow-y-auto">
@@ -416,6 +433,9 @@
         
         <!-- Écran de fin de partie -->
         <div id="game-status" class="game-status fixed inset-0 bg-black bg-opacity-90 flex flex-col justify-center items-center z-50 hidden">
+            <!-- Image Alastor cachée par défaut -->
+            <img id="lose-image" src="./image/Alastor-Demon.png" alt="Alastor Demon" class="demon-image hidden">
+            
             <h2 id="status-message" class="text-4xl font-bold mb-4"></h2>
             <p id="correct-word" class="text-2xl text-gray-400 mb-8 whitespace-pre-line"></p>
             
@@ -601,7 +621,7 @@
                 createGameFacileBtn: document.getElementById('create-game-facile-btn'),
                 createGameDifficileBtn: document.getElementById('create-game-difficile-btn'),
                 activeGamesList: document.getElementById('active-games-list'),
-                leaderboardList: document.getElementById('leaderboard-list'), // Nouveau
+                leaderboardList: document.getElementById('leaderboard-list'), 
                 noGamesMessage: document.getElementById('no-games-message'),
                 lobbyError: document.getElementById('lobby-error'),
                 
@@ -623,6 +643,9 @@
                 replayGameButton: document.getElementById('replay-game-button'),
                 lobbyReturnButton: document.getElementById('lobby-return-button'),
                 
+                // Image Fin de partie (Lose)
+                loseImage: document.getElementById('lose-image'),
+
                 // Modal
                 categoryModal: document.getElementById('category-selection-modal'),
                 categoryListContainer: document.getElementById('category-list-container'),
@@ -843,11 +866,9 @@
                 });
             }
 
-            // NOUVEAU : Écoute et affiche le classement
             function listenToLeaderboard() {
                 if (unsubscribeLeaderboardListener) unsubscribeLeaderboardListener();
                 
-                // On récupère les données brutes et on trie en JS (pour éviter les index Firestore)
                 unsubscribeLeaderboardListener = db.collection('users').onSnapshot(snapshot => {
                     let users = [];
                     snapshot.forEach(doc => {
@@ -857,7 +878,6 @@
                         }
                     });
                     
-                    // Tri décroissant
                     users.sort((a, b) => b.totalScore - a.totalScore);
                     
                     DOM.leaderboardList.innerHTML = '';
@@ -866,7 +886,6 @@
                          return;
                     }
 
-                    // Affiche le Top 10
                     users.slice(0, 10).forEach((user, index) => {
                         const item = document.createElement('div');
                         item.classList.add('leaderboard-item');
@@ -1107,7 +1126,6 @@
                             playerScores: newScores 
                         });
 
-                        // NOUVEAU : Si victoire, mise à jour du score global (hors transaction game pour éviter complexité)
                         if (allLettersGuessed) {
                             updateGlobalScore();
                         }
@@ -1115,9 +1133,7 @@
                 } catch (error) { console.error("Erreur guess:", error); }
             }
 
-            // Fonction séparée pour mettre à jour le score global
             function updateGlobalScore() {
-                // Fire and forget update
                 db.collection('users').doc(currentUserId).update({
                     totalScore: firebase.firestore.FieldValue.increment(1)
                 }).catch(e => console.warn("Erreur maj score global:", e));
@@ -1273,6 +1289,15 @@
                 }
                 
                 DOM.gameStatus.classList.remove('hidden');
+                
+                // --- LOGIQUE IMAGE PERDANT ---
+                // Si on a perdu, on affiche l'image d'Alastor. Sinon, on la cache.
+                if (gameState.status === 'lost') {
+                    DOM.loseImage.classList.remove('hidden');
+                } else {
+                    DOM.loseImage.classList.add('hidden');
+                }
+
                 let wordText = gameState.word;
                 if (gameState.wordDescription) wordText += `\n(${gameState.wordDescription})`;
 
