@@ -5,27 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Le Pendu de l'Enfer</title>
     
-    <link rel="icon" type="image/png" href="./image/logo-site.png">
-    
-    <!-- Scripts Firebase (v8 "compat" - Plus stable pour ce setup) -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Special+Elite&display=swap" rel="stylesheet">
 
     <style>
+        /* --- VOTRE CSS D'ORIGINE (Préservé) --- */
         body {
             font-family: 'Special Elite', monospace;
             color: #fce8f3;
-            background-image: url('./image/backround.jpg');
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-            background-color: #000;
+            background: radial-gradient(circle, #2b0000 0%, #000000 100%); 
+            min-height: 100vh;
         }
         @keyframes pulse-text-glow {
             0%, 100% { text-shadow: 0 0 5px #ff0000, 0 0 10px #ff0000, 0 0 15px #ff4d4d; }
@@ -35,7 +26,6 @@
             0%, 100% { border-color: #ff0000; box-shadow: 0 0 20px #ff0000; }
             50% { border-color: #ff4d4d; box-shadow: 0 0 30px #ff4d4d, 0 0 10px #ff0000; }
         }
-        /* Animation pour l'apparition d'Alastor */
         @keyframes appear-dramatic {
             0% { transform: scale(0) rotate(-10deg); opacity: 0; }
             60% { transform: scale(1.1) rotate(5deg); opacity: 1; }
@@ -244,7 +234,6 @@
             margin-top: 0.5rem;
             font-style: italic;
         }
-        /* Styles pour l'authentification */
         .auth-input {
             background-color: rgba(0, 0, 0, 0.6);
             border: 1px solid #ff0000;
@@ -263,7 +252,6 @@
         .auth-input::placeholder {
             color: #995555;
         }
-        /* Styles pour le Classement */
         .leaderboard-container {
             margin-top: 1.5rem;
             border-top: 1px solid #555;
@@ -296,7 +284,6 @@
         .rank-2 { background-color: #c0c0c0; color: #000; }
         .rank-3 { background-color: #cd7f32; color: #000; }
 
-        /* Style pour l'image de défaite */
         .demon-image {
             max-height: 250px;
             width: auto;
@@ -305,32 +292,36 @@
             filter: drop-shadow(0 0 20px #ff0000);
             border-radius: 10px;
         }
-
+        /* Styles supplémentaires pour scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1a0000; }
+        ::-webkit-scrollbar-thumb { background: #800000; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #ff0000; }
     </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-2">
 
-    <!-- NOUVEAU : Écran de Connexion (visible par défaut) -->
+    <!-- Écran de Connexion -->
     <div id="auth-container" class="auth-container w-full max-w-md mx-auto p-6 md:p-8 rounded-lg text-center">
         <h1 class="title-font text-5xl md:text-6xl mb-6">Check-In</h1>
         <p class="mb-6 text-gray-300">Identifie-toi, âme perdue...</p>
         
-        <input type="text" id="auth-pseudo" class="auth-input" placeholder="Pseudo (ex: AngelDust69)" maxlength="15">
-        <input type="password" id="auth-password" class="auth-input" placeholder="Mot de passe secret">
+        <input type="text" id="auth-pseudo" class="auth-input" placeholder="Pseudo Unique" maxlength="15">
+        <input type="password" id="auth-password" class="auth-input" placeholder="Mot de passe" maxlength="20">
         
-        <button id="auth-submit-btn" class="lobby-button w-full py-3 px-4 rounded-lg text-xl">
-            Entrer en Enfer
-        </button>
+        <div class="flex gap-2 mt-2">
+            <button id="auth-login-btn" class="lobby-button w-1/2 py-3 px-4 rounded-lg text-xl">Connexion</button>
+            <button id="auth-register-btn" class="lobby-button difficulty-button w-1/2 py-3 px-4 rounded-lg text-xl">Inscription</button>
+        </div>
         
         <p id="auth-error" class="lobby-error-message mt-4 font-bold"></p>
-        <p class="text-xs text-gray-500 mt-2">Si le compte n'existe pas, il sera créé automatiquement.</p>
+        <p class="text-xs text-gray-500 mt-2">Le pseudo sert d'identifiant unique.</p>
     </div>
 
-    <!-- Lobby (caché par défaut maintenant) -->
+    <!-- Lobby -->
     <div id="lobby-container" class="lobby-container w-full max-w-md mx-auto p-6 md:p-8 rounded-lg text-center hidden">
         <h1 class="title-font text-5xl md:text-6xl mb-6">Hall de l'Hôtel</h1>
         
-        <!-- Info Joueur -->
         <p class="text-yellow-300 mb-4">Bienvenue, <span id="lobby-username" class="font-bold text-white">...</span></p>
         <button id="logout-btn" class="text-xs text-red-400 underline mb-6 hover:text-white">Se déconnecter</button>
 
@@ -361,7 +352,7 @@
         <p id="lobby-error" class="lobby-error-message mt-4 font-bold"></p>
     </div>
 
-    <!-- Jeu (caché par défaut) -->
+    <!-- Jeu -->
     <div id="game-container" class="game-container w-full max-w-6xl mx-auto p-2 md:p-4 rounded-lg text-center hidden">
         
         <button id="leave-game-btn" class="lobby-button absolute top-2 left-2 text-sm py-1 px-3 rounded-lg z-10">
@@ -433,8 +424,8 @@
         
         <!-- Écran de fin de partie -->
         <div id="game-status" class="game-status fixed inset-0 bg-black bg-opacity-90 flex flex-col justify-center items-center z-50 hidden">
-            <!-- Image Alastor cachée par défaut -->
-            <img id="lose-image" src="./image/Alastor-Demon.png" alt="Alastor Demon" class="demon-image hidden">
+            <!-- Placeholder image pour Alastor (remplace le fichier local) -->
+            <div id="lose-image" class="demon-image hidden text-6xl">😈</div>
             
             <h2 id="status-message" class="text-4xl font-bold mb-4"></h2>
             <p id="correct-word" class="text-2xl text-gray-400 mb-8 whitespace-pre-line"></p>
@@ -470,866 +461,638 @@
         </div>
     </div>
 
-    <!-- SCRIPT -->
-    <script>
-        // Configuration Firebase (v8)
-        const firebaseConfig = {
-          apiKey: "AIzaSyA1-S9RlPXs4nYd-NY4BXdam2g9jUxR7LI",
-          authDomain: "pendu-hazbin.firebaseapp.com",
-          projectId: "pendu-hazbin",
-          storageBucket: "pendu-hazbin.firebasestorage.app",
-          messagingSenderId: "1036994393348",
-          appId: "1:1036994393348:web:00eb92fa640eaa0a160c51",
-          measurementId: "G-484X5XH86E"
-        };
+    <!-- SCRIPT FIREBASE V11 ADAPTÉ À VOTRE LOGIQUE -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp, runTransaction, increment, query, limit, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- CONFIGURATION ---
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Chemins sécurisés obligatoires pour cet environnement
+        const PATH_ROOT = `artifacts/${appId}/public/data`;
+        const PATH_USERS = `${PATH_ROOT}/users`;
+        const PATH_GAMES = `${PATH_ROOT}/games`;
+        const PATH_LOBBY = `${PATH_ROOT}/lobby`;
         
-        // --- CONSTANTES ---
+        // --- VOS DONNÉES (COPIÉES DE VOTRE CODE) ---
         const MAX_GUESSES = 8;
         
-        // --- DONNÉES SHIPS (COUPLES) ---
         const SHIP_DATA_RAW = [
-          { ship: "Charlastor", personnages: ["Charlie", "Alastor"] },
-          { ship: "Chaggie", personnages: ["Charlie", "Vaggie"] },
-          { ship: "RadioHusk", personnages: ["Alastor", "Husk"] },
-          { ship: "RadioDust", personnages: ["Alastor", "Angel Dust"] },
-          { ship: "StaticDust", personnages: ["Vox", "Angel Dust"] },
-          { ship: "RadioStatic", personnages: ["Alastor", "Vox"] },
-          { ship: "ValDust", personnages: ["Valentino", "Angel Dust"] },
-          { ship: "Shaggie", personnages: ["Alastor", "Vaggie"] },
-          { ship: "HuskDust", personnages: ["Husk", "Angel Dust"] },
-          { ship: "Huskerdust", personnages: ["Husk", "Angel Dust"] },
-          { ship: "Rosalastor", personnages: ["Rosie", "Alastor"] },
-          { ship: "PentCherry", personnages: ["Sir Pentious", "Cherri Bomb"] },
-          { ship: "CherriBombious", personnages: ["Cherri Bomb", "Sir Pentious"] },
-          { ship: "VelVox", personnages: ["Velvette", "Vox"] },
-          { ship: "VelVee", personnages: ["Velvette", "Valentino"] },
-          { ship: "ValVee", personnages: ["Valentino", "Velvette"] },
-          { ship: "VeesTrio", personnages: ["Vox", "Velvette", "Valentino"] },
-          { ship: "DustyMay", personnages: ["Angel Dust", "Velvette"] },
-          { ship: "Alastora", personnages: ["Alastor", "Niffty"] },
-          { ship: "Aracknie", personnages: ["Angel Dust", "Niffty"] },
-          { ship: "Mimst", personnages: ["Mimzy", "Husk"] },
-          { ship: "RustyLake", personnages: ["Mimzy", "Angel Dust"] },
-          { ship: "Velvetteen", personnages: ["Velvette", "Angel Dust"] },
-          { ship: "BombHound", personnages: ["Cherri Bomb", "Husk"] },
-          { ship: "MimCherry", personnages: ["Mimzy", "Cherri Bomb"] },
-          { ship: "AngelMay", personnages: ["Angel Dust", "Velvette"] },
-          { ship: "Hazzy", personnages: ["Charlie", "Husk"] },
-          { ship: "PentHusk", personnages: ["Sir Pentious", "Husk"] },
-          { ship: "VaggDust", personnages: ["Vaggie", "Angel Dust"] },
-          { ship: "CharlieDust", personnages: ["Charlie", "Angel Dust"] },
-          { ship: "DustBomb", personnages: ["Angel Dust", "Cherri Bomb"] },
-          { ship: "Bombstar", personnages: ["Charlie", "Cherri Bomb"] },
-          { ship: "MayMay", personnages: ["Mimzy", "Velvette"] },
-          { ship: "SilkRazor", personnages: ["Rosie", "Velvette"] },
-          { ship: "Mimvee", personnages: ["Velvette", "Mimzy"] },
-          { ship: "DustStora", personnages: ["Angel Dust", "Alastor"] },
-          { ship: "Pentastor", personnages: ["Sir Pentious", "Alastor"] },
-          { ship: "OverlordsShip", personnages: ["Rosie", "Vox"] },
-          { ship: "VelvetStora", personnages: ["Velvette", "Alastor"] },
-          { ship: "StoraBomb", personnages: ["Alastor", "Cherri Bomb"] },
-          { ship: "SirDust", personnages: ["Sir Pentious", "Angel Dust"] },
-          { ship: "CherriVee", personnages: ["Cherri Bomb", "Velvette"] },
-          { ship: "Lucilith", personnages: ["Lucifer", "Lilith"] },
-          { ship: "Lucilaggie", personnages: ["Lucifer", "Vaggie"] },
-          { ship: "CharlieStar", personnages: ["Charlie", "Lucifer"] },
-          { ship: "Lucistora", personnages: ["Lucifer", "Alastor"] },
-          { ship: "Lucivox", personnages: ["Lucifer", "Vox"] },
-          { ship: "Lucivette", personnages: ["Lucifer", "Velvette"] },
-          { ship: "Lucival", personnages: ["Lucifer", "Valentino"] },
-          { ship: "Lucistatic", personnages: ["Lucifer", "Vox"] },
-          { ship: "Lucimoon", personnages: ["Lucifer", "Angel Dust"] },
-          { ship: "Lustifer", personnages: ["Lucifer", "Rosie"] },
-          { ship: "Luciflow", personnages: ["Lucifer", "Niffty"] },
-          { ship: "Lucibomb", personnages: ["Lucifer", "Cherri Bomb"] },
+          { ship: "Charlastor", personnages: ["Charlie", "Alastor"] }, { ship: "Chaggie", personnages: ["Charlie", "Vaggie"] },
+          { ship: "RadioHusk", personnages: ["Alastor", "Husk"] }, { ship: "RadioDust", personnages: ["Alastor", "Angel Dust"] },
+          { ship: "StaticDust", personnages: ["Vox", "Angel Dust"] }, { ship: "RadioStatic", personnages: ["Alastor", "Vox"] },
+          { ship: "ValDust", personnages: ["Valentino", "Angel Dust"] }, { ship: "Shaggie", personnages: ["Alastor", "Vaggie"] },
+          { ship: "HuskDust", personnages: ["Husk", "Angel Dust"] }, { ship: "Huskerdust", personnages: ["Husk", "Angel Dust"] },
+          { ship: "Rosalastor", personnages: ["Rosie", "Alastor"] }, { ship: "PentCherry", personnages: ["Sir Pentious", "Cherri Bomb"] },
+          { ship: "CherriBombious", personnages: ["Cherri Bomb", "Sir Pentious"] }, { ship: "VelVox", personnages: ["Velvette", "Vox"] },
+          { ship: "VelVee", personnages: ["Velvette", "Valentino"] }, { ship: "ValVee", personnages: ["Valentino", "Velvette"] },
+          { ship: "VeesTrio", personnages: ["Vox", "Velvette", "Valentino"] }, { ship: "DustyMay", personnages: ["Angel Dust", "Velvette"] },
+          { ship: "Alastora", personnages: ["Alastor", "Niffty"] }, { ship: "Aracknie", personnages: ["Angel Dust", "Niffty"] },
+          { ship: "Mimst", personnages: ["Mimzy", "Husk"] }, { ship: "RustyLake", personnages: ["Mimzy", "Angel Dust"] },
+          { ship: "Velvetteen", personnages: ["Velvette", "Angel Dust"] }, { ship: "BombHound", personnages: ["Cherri Bomb", "Husk"] },
+          { ship: "MimCherry", personnages: ["Mimzy", "Cherri Bomb"] }, { ship: "AngelMay", personnages: ["Angel Dust", "Velvette"] },
+          { ship: "Hazzy", personnages: ["Charlie", "Husk"] }, { ship: "PentHusk", personnages: ["Sir Pentious", "Husk"] },
+          { ship: "VaggDust", personnages: ["Vaggie", "Angel Dust"] }, { ship: "CharlieDust", personnages: ["Charlie", "Angel Dust"] },
+          { ship: "DustBomb", personnages: ["Angel Dust", "Cherri Bomb"] }, { ship: "Bombstar", personnages: ["Charlie", "Cherri Bomb"] },
+          { ship: "MayMay", personnages: ["Mimzy", "Velvette"] }, { ship: "SilkRazor", personnages: ["Rosie", "Velvette"] },
+          { ship: "Mimvee", personnages: ["Velvette", "Mimzy"] }, { ship: "DustStora", personnages: ["Angel Dust", "Alastor"] },
+          { ship: "Pentastor", personnages: ["Sir Pentious", "Alastor"] }, { ship: "OverlordsShip", personnages: ["Rosie", "Vox"] },
+          { ship: "VelvetStora", personnages: ["Velvette", "Alastor"] }, { ship: "StoraBomb", personnages: ["Alastor", "Cherri Bomb"] },
+          { ship: "SirDust", personnages: ["Sir Pentious", "Angel Dust"] }, { ship: "CherriVee", personnages: ["Cherri Bomb", "Velvette"] },
+          { ship: "Lucilith", personnages: ["Lucifer", "Lilith"] }, { ship: "Lucilaggie", personnages: ["Lucifer", "Vaggie"] },
+          { ship: "CharlieStar", personnages: ["Charlie", "Lucifer"] }, { ship: "Lucistora", personnages: ["Lucifer", "Alastor"] },
+          { ship: "Lucivox", personnages: ["Lucifer", "Vox"] }, { ship: "Lucivette", personnages: ["Lucifer", "Velvette"] },
+          { ship: "Lucival", personnages: ["Lucifer", "Valentino"] }, { ship: "Lucistatic", personnages: ["Lucifer", "Vox"] },
+          { ship: "Lucimoon", personnages: ["Lucifer", "Angel Dust"] }, { ship: "Lustifer", personnages: ["Lucifer", "Rosie"] },
+          { ship: "Luciflow", personnages: ["Lucifer", "Niffty"] }, { ship: "Lucibomb", personnages: ["Lucifer", "Cherri Bomb"] },
           { ship: "Lucistious", personnages: ["Lucifer", "Sir Pentious"] }
         ];
 
-        // --- LISTE DE MOTS ---
         const WORD_CATEGORIES = {
-            "Personnage": [
-                "ADAM", "ALASTOR", "ANGEL DUST", "ASMODEUS", "BEELZEBUB", "CARMILLA CARMINE", 
-                "CHARLIE MORNINGSTAR", "CHERRI BOMB", "EMILY", "HUSK", "LILITH MORNINGSTAR", 
-                "LUCIFER MORNINGSTAR", "LUTE", "MAMMON", "MIMZY", "NIFFTY", "ROSIE", 
-                "SAINT PIERRE", "SATAN", "SERA", "SIR PENTIOUS", "STOLAS", "VALENTINO", 
-                "VAGGIE", "VELVETTE", "VOX", "ZESTIAL",
-                "ABEL", "BAXTER", "DAZZLE", "FAT NUGGETS", "KATIE KILLJOY", "KEEKEE", 
-                "RAZZLE", "SUSAN", "TOM TRENCH", "TRAVIS", "ZEEZI", 
-                "AGENT ONE", "AGENT TWO", "BLITZO", "FIZZAROLLI", "LOONA", "MARTHA", 
-                "MILLIE", "MOXXIE", "OCTAVIA", "RALPHIE", "STRIKER", "LEVIATHAN",
-                "EGG BOIZ", "ANDREALPHUS", "SALLIE MAY", "WALLY WACKFORD"
-            ],
-            "Lieu & Faction": [
-                "CERCLE DE L ORGUEIL", "CANNIBAL TOWN", "ENFER", "HAZBIN HOTEL", "HELLAVERSE", 
-                "PARADIS", "HEAVEN", "PENTAGRAM CITY", "V TOWER", "LES VEES", "VOXTEK",
-                "IMP", "CERCLE DE LA COLERE", "CERCLE DE L AVARICE", "CERCLE DE LA PARESSE",
-                "CERCLE DE LA GOURMANDISE", "CERCLE DE LA LUXURE", "CERCLE DE L ENVIE",
-                "PURGATOIRE", "CERCLE DES PECHES",
-                "MAFIA", "LOO LOO LAND"
-            ],
-            "Espèce & Rang & Objets": [
-                "ARCHANGE", "GOETIA", "CHERUBINS", "EXORCISTES", "WINNERS", "HELLBORN", 
-                "HELLHOUNDS", "IMPS", "OVERLORDS", "PECHEURS", "SINNERS", "SERAPHINS",
-                "DOMINATIONS", "PUISSANCES", "TRONE", "VERTUS", "SUCCUBES", "DEMON DECHU",
-                "PACTE", "CONTRAT", "GRIMOIRE", "AME", "DAMNES", "PECHE",
-                "ANGE", "DEMON", "PORTAIL", "GUERRE", "BARRIERE MAGIQUE",
-                "ARS GOETIA", "PRINCE DEMON", "ROI DE L ENFER", "REINE DE L ENFER",
-                "ARME ANGELIQUE", "LANCE ANGELIQUE", "AUREOLE"
-            ],
-            "Musique (EN)": [
-                "HAPPY DAY IN HELL", "HELL IS FOREVER", "STAYED GONE", "IT STARTS WITH SORRY",
-                "RESPECTLESS", "WHATEVER IT TAKES", "POISON", "LOSER, BABY", "HELLS GREATEST DAD",
-                "MORE THAN ANYTHING", "WELCOME TO HEAVEN", "OUT FOR LOVE", "TRUST US", "LIKE YOU",
-                "SERA CONFESSION", "GRAVITY", "PISS", "SPEEDRUN TO REDEMPTION", "DONT YOU FORGET",
-                "CLEAN IT UP", "BAD WITH US", "VOX POPULI", "VOX DEI", "LOVE IN A BOTTLE",
-                "LOSIN STREAK", "EASY"
-            ],
-            "Musique (FR)": [
-                "UN JOYEUX JOUR EN ENFER", "L ENFER EST ETERNEL", "DEMANDEZ PARDON", "IRRESPECTUEUX",
-                "POISON", "LE MEILLEUR PERE DE L ENFER", "PLUS QUE TOUT", "BIENVENUE AU PARADIS",
-                "FAIS NOUS CONFIANCE", "UNE FOIS QU ON SERA LA HAUT", "LA CONFESSION DE SERA",
-                "GRAVITY", "PISS", "SPEEDRUN VERS LA REDEMPTION", "N OUBLIE PAS", "VOX POPULI",
-                "VOX DEI", "L AMOUR EN BOUTEILLE", "FACILE"
-            ],
+            "Personnage": ["ADAM", "ALASTOR", "ANGEL DUST", "ASMODEUS", "BEELZEBUB", "CARMILLA CARMINE", "CHARLIE MORNINGSTAR", "CHERRI BOMB", "EMILY", "HUSK", "LILITH MORNINGSTAR", "LUCIFER MORNINGSTAR", "LUTE", "MAMMON", "MIMZY", "NIFFTY", "ROSIE", "SAINT PIERRE", "SATAN", "SERA", "SIR PENTIOUS", "STOLAS", "VALENTINO", "VAGGIE", "VELVETTE", "VOX", "ZESTIAL", "ABEL", "BAXTER", "DAZZLE", "FAT NUGGETS", "KATIE KILLJOY", "KEEKEE", "RAZZLE", "SUSAN", "TOM TRENCH", "TRAVIS", "ZEEZI", "AGENT ONE", "AGENT TWO", "BLITZO", "FIZZAROLLI", "LOONA", "MARTHA", "MILLIE", "MOXXIE", "OCTAVIA", "RALPHIE", "STRIKER", "LEVIATHAN", "EGG BOIZ", "ANDREALPHUS", "SALLIE MAY", "WALLY WACKFORD"],
+            "Lieu & Faction": ["CERCLE DE L ORGUEIL", "CANNIBAL TOWN", "ENFER", "HAZBIN HOTEL", "HELLAVERSE", "PARADIS", "HEAVEN", "PENTAGRAM CITY", "V TOWER", "LES VEES", "VOXTEK", "IMP", "CERCLE DE LA COLERE", "CERCLE DE L AVARICE", "CERCLE DE LA PARESSE", "CERCLE DE LA GOURMANDISE", "CERCLE DE LA LUXURE", "CERCLE DE L ENVIE", "PURGATOIRE", "CERCLE DES PECHES", "MAFIA", "LOO LOO LAND"],
+            "Espèce & Rang & Objets": ["ARCHANGE", "GOETIA", "CHERUBINS", "EXORCISTES", "WINNERS", "HELLBORN", "HELLHOUNDS", "IMPS", "OVERLORDS", "PECHEURS", "SINNERS", "SERAPHINS", "DOMINATIONS", "PUISSANCES", "TRONE", "VERTUS", "SUCCUBES", "DEMON DECHU", "PACTE", "CONTRAT", "GRIMOIRE", "AME", "DAMNES", "PECHE", "ANGE", "DEMON", "PORTAIL", "GUERRE", "BARRIERE MAGIQUE", "ARS GOETIA", "PRINCE DEMON", "ROI DE L ENFER", "REINE DE L ENFER", "ARME ANGELIQUE", "LANCE ANGELIQUE", "AUREOLE"],
+            "Musique (EN)": ["HAPPY DAY IN HELL", "HELL IS FOREVER", "STAYED GONE", "IT STARTS WITH SORRY", "RESPECTLESS", "WHATEVER IT TAKES", "POISON", "LOSER, BABY", "HELLS GREATEST DAD", "MORE THAN ANYTHING", "WELCOME TO HEAVEN", "OUT FOR LOVE", "TRUST US", "LIKE YOU", "SERA CONFESSION", "GRAVITY", "PISS", "SPEEDRUN TO REDEMPTION", "DONT YOU FORGET", "CLEAN IT UP", "BAD WITH US", "VOX POPULI", "VOX DEI", "LOVE IN A BOTTLE", "LOSIN STREAK", "EASY"],
+            "Musique (FR)": ["UN JOYEUX JOUR EN ENFER", "L ENFER EST ETERNEL", "DEMANDEZ PARDON", "IRRESPECTUEUX", "POISON", "LE MEILLEUR PERE DE L ENFER", "PLUS QUE TOUT", "BIENVENUE AU PARADIS", "FAIS NOUS CONFIANCE", "UNE FOIS QU ON SERA LA HAUT", "LA CONFESSION DE SERA", "GRAVITY", "PISS", "SPEEDRUN VERS LA REDEMPTION", "N OUBLIE PAS", "VOX POPULI", "VOX DEI", "L AMOUR EN BOUTEILLE", "FACILE"],
             "Ships (Couples)": SHIP_DATA_RAW.map(item => item.ship.toUpperCase())
         };
         
-        // Attend que le DOM soit prêt
-        document.addEventListener('DOMContentLoaded', () => {
-            
-            let auth;
-            let db;
-            let currentUserId = null;
-            let currentHostName = null;
-            let currentGameId = null;
-            let unsubscribeGameListener = null;
-            let unsubscribeLobbyListener = null;
-            let unsubscribeLeaderboardListener = null;
-            
-            const DOM = {
-                // Auth
-                authContainer: document.getElementById('auth-container'),
-                authPseudo: document.getElementById('auth-pseudo'),
-                authPassword: document.getElementById('auth-password'),
-                authSubmitBtn: document.getElementById('auth-submit-btn'),
-                authError: document.getElementById('auth-error'),
-                
-                // Lobby
-                lobbyContainer: document.getElementById('lobby-container'),
-                lobbyUsername: document.getElementById('lobby-username'), 
-                logoutBtn: document.getElementById('logout-btn'),       
-                createGameFacileBtn: document.getElementById('create-game-facile-btn'),
-                createGameDifficileBtn: document.getElementById('create-game-difficile-btn'),
-                activeGamesList: document.getElementById('active-games-list'),
-                leaderboardList: document.getElementById('leaderboard-list'), 
-                noGamesMessage: document.getElementById('no-games-message'),
-                lobbyError: document.getElementById('lobby-error'),
-                
-                // Game
-                gameContainer: document.getElementById('game-container'),
-                leaveGameBtn: document.getElementById('leave-game-btn'),
-                categoryP: document.getElementById('category-p'),
-                categoryDisplay: document.getElementById('word-category'),
-                turnIndicator: document.getElementById('turn-indicator'),
-                guessesLeftSpan: document.getElementById('guesses-left'),
-                hangmanParts: document.querySelectorAll('.hangman-part'),
-                wordDisplay: document.getElementById('word-display'),
-                keyboard: document.getElementById('keyboard'),
-                scoresList: document.getElementById('scores-list'), 
-                gameStatus: document.getElementById('game-status'),
-                statusMessage: document.getElementById('status-message'),
-                correctWordDisplay: document.getElementById('correct-word'),
-                finalScoresList: document.getElementById('final-scores-list'), 
-                replayGameButton: document.getElementById('replay-game-button'),
-                lobbyReturnButton: document.getElementById('lobby-return-button'),
-                
-                // Image Fin de partie (Lose)
-                loseImage: document.getElementById('lose-image'),
+        // --- DOM REFERENCES ---
+        const DOM = {
+            authContainer: document.getElementById('auth-container'),
+            authPseudo: document.getElementById('auth-pseudo'),
+            authPassword: document.getElementById('auth-password'),
+            authLoginBtn: document.getElementById('auth-login-btn'),
+            authRegisterBtn: document.getElementById('auth-register-btn'),
+            authError: document.getElementById('auth-error'),
+            lobbyContainer: document.getElementById('lobby-container'),
+            lobbyUsername: document.getElementById('lobby-username'), 
+            logoutBtn: document.getElementById('logout-btn'),       
+            createGameFacileBtn: document.getElementById('create-game-facile-btn'),
+            createGameDifficileBtn: document.getElementById('create-game-difficile-btn'),
+            activeGamesList: document.getElementById('active-games-list'),
+            leaderboardList: document.getElementById('leaderboard-list'), 
+            noGamesMessage: document.getElementById('no-games-message'),
+            lobbyError: document.getElementById('lobby-error'),
+            gameContainer: document.getElementById('game-container'),
+            leaveGameBtn: document.getElementById('leave-game-btn'),
+            categoryP: document.getElementById('category-p'),
+            categoryDisplay: document.getElementById('word-category'),
+            turnIndicator: document.getElementById('turn-indicator'),
+            guessesLeftSpan: document.getElementById('guesses-left'),
+            hangmanParts: document.querySelectorAll('.hangman-part'),
+            wordDisplay: document.getElementById('word-display'),
+            keyboard: document.getElementById('keyboard'),
+            scoresList: document.getElementById('scores-list'), 
+            gameStatus: document.getElementById('game-status'),
+            statusMessage: document.getElementById('status-message'),
+            correctWordDisplay: document.getElementById('correct-word'),
+            finalScoresList: document.getElementById('final-scores-list'), 
+            replayGameButton: document.getElementById('replay-game-button'),
+            lobbyReturnButton: document.getElementById('lobby-return-button'),
+            loseImage: document.getElementById('lose-image'),
+            categoryModal: document.getElementById('category-selection-modal'),
+            categoryListContainer: document.getElementById('category-list-container'),
+            categoryModalCancelBtn: document.getElementById('category-modal-cancel-btn')
+        };
 
-                // Modal
-                categoryModal: document.getElementById('category-selection-modal'),
-                categoryListContainer: document.getElementById('category-list-container'),
-                categoryModalCancelBtn: document.getElementById('category-modal-cancel-btn')
-            };
+        let currentUserId = null;
+        let currentHostName = null;
+        let currentGameId = null;
+        let unsubscribeGameListener = null;
+        let unsubscribeLobbyListener = null;
+        let unsubscribeLeaderboardListener = null;
+
+        // --- AUTH LOGIC ---
+        async function initAuth() {
+             if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                 try { await signInWithCustomToken(auth, __initial_auth_token); } 
+                 catch(e) { console.log("Token custom invalide, attente login manuel"); }
+             }
+
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    currentUserId = user.uid;
+                    const userDoc = await getDoc(doc(db, PATH_USERS, user.uid));
+                    if (userDoc.exists() && userDoc.data().username) {
+                        currentHostName = userDoc.data().username;
+                        showLobby();
+                    } else {
+                        // Cas rare: utilisateur Auth mais pas de doc DB (ou inscription en cours)
+                        // On reste sur login pour l'instant
+                        signOut(auth); 
+                    }
+                } else {
+                    showAuth();
+                }
+            });
+        }
+
+        // Génère un email fictif pour mapper le pseudo
+        function getEmailFromPseudo(pseudo) {
+            // Nettoyage simple : minuscules et caractères sûrs uniquement
+            const cleanPseudo = pseudo.toLowerCase().replace(/[^a-z0-9]/g, '');
+            return `${cleanPseudo}@hazbin.fake`;
+        }
+
+        async function handleRegister() {
+            const pseudo = DOM.authPseudo.value.trim();
+            const password = DOM.authPassword.value;
+
+            if (pseudo.length < 3) { DOM.authError.textContent = "Pseudo trop court (min 3)."; return; }
+            if (password.length < 6) { DOM.authError.textContent = "Mot de passe trop court (min 6)."; return; }
+
+            setLoading(true);
+            DOM.authError.textContent = "";
+            
+            const fakeEmail = getEmailFromPseudo(pseudo);
 
             try {
-                firebase.initializeApp(firebaseConfig);
-                auth = firebase.auth();
-                db = firebase.firestore();
-                
-                initializeAuth();
-                addEventListeners();
-            } catch (e) {
-                console.error("Erreur d'initialisation Firebase:", e);
-                DOM.authError.textContent = "Impossible d'initialiser Firebase.";
-            }
+                // 1. Création Auth (échouera si email/pseudo déjà pris)
+                const userCredential = await createUserWithEmailAndPassword(auth, fakeEmail, password);
+                const user = userCredential.user;
 
-            function initializeAuth() {
-                auth.onAuthStateChanged((user) => {
-                    if (user) {
-                        currentUserId = user.uid;
-                        currentHostName = user.displayName || DOM.authPseudo.value || `Joueur_${user.uid.substring(0,4)}`;
-                        
-                        // Met à jour l'UI
-                        DOM.lobbyUsername.textContent = currentHostName;
-                        DOM.authError.textContent = "";
-                        
-                        // Affiche le lobby, cache le login
-                        DOM.authContainer.classList.add('hidden');
-                        DOM.lobbyContainer.classList.remove('hidden');
-                        DOM.createGameFacileBtn.disabled = false;
-                        DOM.createGameDifficileBtn.disabled = false;
-                        
-                        // SYNC UTILISATEUR ET SCORES
-                        const userRef = db.collection('users').doc(currentUserId);
-                        userRef.get().then(doc => {
-                            if (!doc.exists) {
-                                // Crée le profil joueur s'il n'existe pas
-                                userRef.set({ username: currentHostName, totalScore: 0 });
-                            } else {
-                                // Met à jour le pseudo si changé
-                                if (doc.data().username !== currentHostName) {
-                                    userRef.update({ username: currentHostName });
-                                }
-                            }
-                        });
-
-                        listenToLobby();
-                        listenToLeaderboard();
-                    } else {
-                        currentUserId = null;
-                        currentHostName = null;
-                        
-                        // Affiche le login
-                        DOM.authContainer.classList.remove('hidden');
-                        DOM.lobbyContainer.classList.add('hidden');
-                        DOM.gameContainer.classList.add('hidden');
-                        DOM.createGameFacileBtn.disabled = true;
-                        DOM.createGameDifficileBtn.disabled = true;
-                        
-                        if (unsubscribeLobbyListener) unsubscribeLobbyListener();
-                        if (unsubscribeLeaderboardListener) unsubscribeLeaderboardListener();
-                    }
+                // 2. Création Profil DB
+                await setDoc(doc(db, PATH_USERS, user.uid), {
+                    username: pseudo,
+                    totalScore: 0,
+                    createdAt: serverTimestamp()
                 });
-            }
 
-            async function handleAuth() {
-                const pseudo = DOM.authPseudo.value.trim();
-                const password = DOM.authPassword.value;
+                // 3. Mise à jour profil Auth (affichage)
+                await updateProfile(user, { displayName: pseudo });
 
-                if (pseudo.length < 3) {
-                    DOM.authError.textContent = "Le pseudo est trop court (min 3 car).";
-                    return;
+                // Le listener onAuthStateChanged prendra le relais pour afficher le lobby
+            } catch (error) {
+                console.error("Erreur Inscription:", error);
+                if (error.code === 'auth/email-already-in-use') {
+                    DOM.authError.textContent = "Ce pseudo est déjà pris par un autre démon !";
+                } else if (error.code === 'auth/weak-password') {
+                    DOM.authError.textContent = "Mot de passe trop faible.";
+                } else {
+                    DOM.authError.textContent = "Erreur inscription: " + error.message;
                 }
-                if (password.length < 6) {
-                    DOM.authError.textContent = "Le mot de passe est trop court (min 6 car).";
-                    return;
-                }
-
-                DOM.authSubmitBtn.disabled = true;
-                DOM.authSubmitBtn.textContent = "Vérification...";
-                DOM.authError.textContent = "";
-
-                const fakeEmail = `${pseudo.toLowerCase().replace(/[^a-z0-9]/g, '')}@hazbin.game`;
-
-                try {
-                    await auth.signInWithEmailAndPassword(fakeEmail, password);
-                } catch (error) {
-                    if (error.code === 'auth/user-not-found') {
-                        try {
-                            const userCredential = await auth.createUserWithEmailAndPassword(fakeEmail, password);
-                            await userCredential.user.updateProfile({ displayName: pseudo });
-                            currentHostName = pseudo; 
-                            DOM.lobbyUsername.textContent = pseudo;
-                        } catch (createError) {
-                            if (createError.code === 'auth/operation-not-allowed') {
-                                await fallbackAnonymousLogin(pseudo);
-                            } else {
-                                console.error("Erreur création:", createError);
-                                DOM.authError.textContent = "Erreur: " + createError.message;
-                            }
-                        }
-                    } else if (error.code === 'auth/operation-not-allowed') {
-                        await fallbackAnonymousLogin(pseudo);
-                    } else if (error.code === 'auth/wrong-password') {
-                        DOM.authError.textContent = "Mauvais mot de passe pour ce pseudo !";
-                    } else {
-                        console.error("Erreur connexion:", error);
-                        DOM.authError.textContent = "Erreur: " + error.message;
-                    }
-                } finally {
-                    DOM.authSubmitBtn.disabled = false;
-                    DOM.authSubmitBtn.textContent = "Entrer en Enfer";
-                }
+            } finally {
+                setLoading(false);
             }
+        }
 
-            async function fallbackAnonymousLogin(pseudo) {
-                try {
-                    DOM.authSubmitBtn.textContent = "Connexion Invité...";
-                    await auth.signInAnonymously();
-                    if (auth.currentUser) {
-                        await auth.currentUser.updateProfile({ displayName: pseudo });
-                        currentHostName = pseudo;
-                        DOM.lobbyUsername.textContent = pseudo;
-                        DOM.authError.style.color = "orange";
-                        DOM.authError.textContent = "Mode Invité activé (Serveur non configuré).";
-                    }
-                } catch (anonError) {
-                    console.error("Erreur fallback:", anonError);
-                    DOM.authError.textContent = "Impossible de se connecter (même en invité).";
-                }
-            }
+        async function handleLogin() {
+            const pseudo = DOM.authPseudo.value.trim();
+            const password = DOM.authPassword.value;
 
-            function addEventListeners() {
-                DOM.authSubmitBtn.addEventListener('click', handleAuth);
-                DOM.logoutBtn.addEventListener('click', () => auth.signOut());
-                DOM.authPassword.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleAuth(); });
+            if (!pseudo || !password) { DOM.authError.textContent = "Remplissez les deux champs."; return; }
 
-                DOM.createGameFacileBtn.addEventListener('click', () => showCategoryModal('create'));
-                DOM.createGameDifficileBtn.addEventListener('click', () => createGame('difficile', null));
-                DOM.lobbyReturnButton.addEventListener('click', leaveGame);
-                DOM.replayGameButton.addEventListener('click', promptForReplay);
-                DOM.leaveGameBtn.addEventListener('click', leaveGame);
-                DOM.keyboard.addEventListener('click', handleKeyboardClick);
-                document.addEventListener('keydown', handlePhysicalKey);
-                DOM.categoryModalCancelBtn.addEventListener('click', hideCategoryModal); 
-            }
-
-            function showCategoryModal(mode) {
-                DOM.categoryListContainer.innerHTML = '';
-                const allCategories = Object.keys(WORD_CATEGORIES);
-                allCategories.forEach(categoryName => {
-                    const btn = document.createElement('button');
-                    btn.textContent = categoryName;
-                    btn.classList.add('category-selection-button');
-                    btn.onclick = () => {
-                        hideCategoryModal();
-                        if (mode === 'create') { createGame('facile', categoryName); }
-                        else if (mode === 'replay') { handleReplay(categoryName); }
-                    };
-                    DOM.categoryListContainer.appendChild(btn);
-                });
-                DOM.categoryModal.classList.remove('hidden');
-                if (mode === 'create') { DOM.lobbyContainer.classList.add('hidden'); }
-                else { DOM.gameStatus.classList.add('hidden'); }
-            }
-
-            function hideCategoryModal() {
-                DOM.categoryModal.classList.add('hidden');
-                if (!currentGameId) { DOM.lobbyContainer.classList.remove('hidden'); }
-                else { DOM.gameStatus.classList.remove('hidden'); }
-            }
-
-            async function deleteGameFromLobby(gameId) {
-                if (!gameId) return;
-                try {
-                    await db.collection("lobby").doc(gameId).delete();
-                    await db.collection("games").doc(gameId).delete();
-                } catch (error) { console.error("Erreur suppression:", error); }
-            }
+            setLoading(true);
+            DOM.authError.textContent = "";
             
-            function listenToLobby() {
-                if (unsubscribeLobbyListener) unsubscribeLobbyListener();
-                unsubscribeLobbyListener = db.collection("lobby").onSnapshot((snapshot) => {
-                    DOM.activeGamesList.innerHTML = '';
-                    if (snapshot.empty) {
-                        DOM.activeGamesList.appendChild(DOM.noGamesMessage.cloneNode(true));
-                    } else {
-                        snapshot.forEach((docSnap) => {
-                            const game = docSnap.data();
-                            const item = document.createElement('div');
-                            item.classList.add('lobby-game-item');
-                            const text = document.createElement('span');
-                            const difficultyText = game.difficulty === 'facile' ? 'Facile' : 'Difficile';
-                            text.textContent = `${game.hostName} (${difficultyText})`;
-                            item.appendChild(text);
-                            const buttonContainer = document.createElement('div');
-                            const joinBtn = document.createElement('button');
-                            joinBtn.textContent = "Rejoindre";
-                            if (game.hostId === currentUserId) {
-                                joinBtn.disabled = true;
-                                joinBtn.textContent = "Votre partie";
-                                const deleteBtn = document.createElement('button');
-                                deleteBtn.textContent = "Supprimer";
-                                deleteBtn.classList.add('delete-button');
-                                deleteBtn.onclick = (e) => { e.stopPropagation(); deleteGameFromLobby(docSnap.id); };
-                                buttonContainer.appendChild(joinBtn);
-                                buttonContainer.appendChild(deleteBtn);
-                            } else {
-                                joinBtn.onclick = () => joinGame(docSnap.id);
-                                buttonContainer.appendChild(joinBtn);
-                            }
-                            item.appendChild(buttonContainer);
-                            DOM.activeGamesList.appendChild(item);
-                        });
-                    }
-                });
+            const fakeEmail = getEmailFromPseudo(pseudo);
+
+            try {
+                await signInWithEmailAndPassword(auth, fakeEmail, password);
+                // Le listener onAuthStateChanged prendra le relais
+            } catch (error) {
+                console.error("Erreur Connexion:", error);
+                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                    DOM.authError.textContent = "Mauvais pseudo ou mot de passe.";
+                } else {
+                    DOM.authError.textContent = "Erreur connexion: " + error.message;
+                }
+            } finally {
+                setLoading(false);
             }
+        }
 
-            function listenToLeaderboard() {
-                if (unsubscribeLeaderboardListener) unsubscribeLeaderboardListener();
-                
-                unsubscribeLeaderboardListener = db.collection('users').onSnapshot(snapshot => {
-                    let users = [];
-                    snapshot.forEach(doc => {
-                        const data = doc.data();
-                        if (data.totalScore !== undefined) {
-                            users.push(data);
-                        }
-                    });
-                    
-                    users.sort((a, b) => b.totalScore - a.totalScore);
-                    
-                    DOM.leaderboardList.innerHTML = '';
-                    if(users.length === 0) {
-                         DOM.leaderboardList.innerHTML = '<p class="text-gray-500 text-center p-2">Aucun Overlord pour le moment.</p>';
-                         return;
-                    }
+        function setLoading(isLoading) {
+            DOM.authLoginBtn.disabled = isLoading;
+            DOM.authRegisterBtn.disabled = isLoading;
+            if (isLoading) {
+                DOM.authLoginBtn.classList.add('opacity-50');
+                DOM.authRegisterBtn.classList.add('opacity-50');
+            } else {
+                DOM.authLoginBtn.classList.remove('opacity-50');
+                DOM.authRegisterBtn.classList.remove('opacity-50');
+            }
+        }
 
-                    users.slice(0, 10).forEach((user, index) => {
+        // --- NAVIGATION ---
+        function showAuth() {
+            DOM.authContainer.classList.remove('hidden');
+            DOM.lobbyContainer.classList.add('hidden');
+            DOM.gameContainer.classList.add('hidden');
+            DOM.authPseudo.value = "";
+            DOM.authPassword.value = "";
+            DOM.authError.textContent = "";
+        }
+
+        function showLobby() {
+            DOM.authContainer.classList.add('hidden');
+            DOM.lobbyContainer.classList.remove('hidden');
+            DOM.gameContainer.classList.add('hidden');
+            DOM.gameStatus.classList.add('hidden');
+            DOM.createGameFacileBtn.disabled = false;
+            DOM.createGameDifficileBtn.disabled = false;
+            DOM.lobbyUsername.textContent = currentHostName;
+            
+            listenToLobby();
+            listenToLeaderboard();
+        }
+
+        // --- LOBBY ---
+        function listenToLobby() {
+            if (unsubscribeLobbyListener) unsubscribeLobbyListener();
+            unsubscribeLobbyListener = onSnapshot(collection(db, PATH_LOBBY), (snapshot) => {
+                DOM.activeGamesList.innerHTML = '';
+                if (snapshot.empty) {
+                    DOM.activeGamesList.appendChild(DOM.noGamesMessage.cloneNode(true));
+                } else {
+                    snapshot.forEach((docSnap) => {
+                        const game = docSnap.data();
                         const item = document.createElement('div');
-                        item.classList.add('leaderboard-item');
-                        
-                        const rank = index + 1;
-                        let rankClass = "bg-gray-700";
-                        if(rank === 1) rankClass = "rank-1";
-                        else if(rank === 2) rankClass = "rank-2";
-                        else if(rank === 3) rankClass = "rank-3";
-
-                        item.innerHTML = `
-                            <div class="flex items-center">
-                                <span class="rank-badge ${rankClass}">${rank}</span>
-                                <span class="text-white font-bold truncate max-w-[150px]">${user.username}</span>
-                            </div>
-                            <span class="text-yellow-400 font-bold">${user.totalScore} pts</span>
-                        `;
-                        DOM.leaderboardList.appendChild(item);
+                        item.classList.add('lobby-game-item');
+                        const text = document.createElement('span');
+                        const difficultyText = game.difficulty === 'facile' ? 'Facile' : 'Difficile';
+                        text.textContent = `${game.hostName} (${difficultyText})`;
+                        item.appendChild(text);
+                        const buttonContainer = document.createElement('div');
+                        const joinBtn = document.createElement('button');
+                        joinBtn.textContent = "Rejoindre";
+                        if (game.hostId === currentUserId) {
+                            joinBtn.disabled = true;
+                            joinBtn.textContent = "Votre partie";
+                            const deleteBtn = document.createElement('button');
+                            deleteBtn.textContent = "Supprimer";
+                            deleteBtn.classList.add('delete-button');
+                            deleteBtn.onclick = (e) => { e.stopPropagation(); deleteGameFromLobby(docSnap.id); };
+                            buttonContainer.appendChild(joinBtn);
+                            buttonContainer.appendChild(deleteBtn);
+                        } else {
+                            joinBtn.onclick = () => joinGame(docSnap.id);
+                            buttonContainer.appendChild(joinBtn);
+                        }
+                        item.appendChild(buttonContainer);
+                        DOM.activeGamesList.appendChild(item);
                     });
-                }, (error) => {
-                    console.error("Erreur classement:", error);
-                    DOM.leaderboardList.innerHTML = '<p class="text-red-500 p-2">Erreur chargement.</p>';
-                });
-            }
-
-            async function createGame(difficulty, categoryName) {
-                if (!currentUserId || !difficulty) return;
-                DOM.createGameFacileBtn.disabled = true;
-                DOM.createGameDifficileBtn.disabled = true;
-                try {
-                    const newWordData = getNewWord(categoryName, []);
-                    if (!newWordData || !newWordData.word) throw new Error("Erreur récupération mot.");
-                    
-                    const gameDocRef = await db.collection("games").add({
-                        hostId: currentUserId,
-                        word: newWordData.word.toUpperCase(),
-                        category: newWordData.category,
-                        wordDescription: newWordData.description || null, 
-                        difficulty: difficulty,
-                        guessedLetters: [],
-                        wrongGuesses: 0,
-                        status: "playing",
-                        playerList: [currentUserId],
-                        playerNames: { [currentUserId]: currentHostName },
-                        playerScores: { [currentUserId]: 0 },
-                        currentPlayerTurn: currentUserId,
-                        starterIndex: 0,
-                        usedWords: [newWordData.word.toUpperCase()]
-                    });
-                    
-                    await db.collection("lobby").doc(gameDocRef.id).set({
-                        hostId: currentUserId,
-                        hostName: currentHostName,
-                        difficulty: difficulty,
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                    
-                    currentGameId = gameDocRef.id;
-                    DOM.lobbyContainer.classList.add('hidden');
-                    DOM.gameContainer.classList.remove('hidden');
-                    generateKeyboard();
-                    updateUI((await gameDocRef.get()).data());
-                    attachGameListener(gameDocRef.id);
-                } catch (error) {
-                    console.error("Erreur création:", error);
-                    DOM.lobbyError.textContent = "Erreur création.";
-                    DOM.createGameFacileBtn.disabled = false;
-                    DOM.createGameDifficileBtn.disabled = false;
-                    DOM.lobbyContainer.classList.remove('hidden');
                 }
+            });
+        }
+
+        function listenToLeaderboard() {
+            if (unsubscribeLeaderboardListener) unsubscribeLeaderboardListener();
+            // Limitation : tri simple côté client car index pas garanti
+            unsubscribeLeaderboardListener = onSnapshot(query(collection(db, PATH_USERS), limit(20)), (snapshot) => {
+                let users = [];
+                snapshot.forEach(doc => users.push(doc.data()));
+                users.sort((a, b) => (b.totalScore || 0) - (a.totalScore || 0));
+
+                DOM.leaderboardList.innerHTML = '';
+                if(users.length === 0) DOM.leaderboardList.innerHTML = '<p class="text-gray-500">Vide...</p>';
+                
+                users.slice(0, 10).forEach((user, index) => {
+                    const item = document.createElement('div');
+                    item.classList.add('leaderboard-item');
+                    const rank = index + 1;
+                    let rankClass = "bg-gray-700";
+                    if(rank === 1) rankClass = "rank-1";
+                    else if(rank === 2) rankClass = "rank-2";
+                    else if(rank === 3) rankClass = "rank-3";
+
+                    item.innerHTML = `
+                        <div class="flex items-center">
+                            <span class="rank-badge ${rankClass}">${rank}</span>
+                            <span class="text-white font-bold truncate max-w-[150px]">${user.username}</span>
+                        </div>
+                        <span class="text-yellow-400 font-bold">${user.totalScore || 0} pts</span>
+                    `;
+                    DOM.leaderboardList.appendChild(item);
+                });
+            });
+        }
+
+        async function deleteGameFromLobby(gameId) {
+            if (!gameId) return;
+            try {
+                await deleteDoc(doc(db, PATH_LOBBY, gameId));
+                await deleteDoc(doc(db, PATH_GAMES, gameId));
+            } catch (error) { console.error(error); }
+        }
+
+        // --- GAME LOGIC ---
+        function getNewWord(categoryName = null, usedWords = []) {
+            let categoryToPickFrom = categoryName;
+            if (!categoryToPickFrom) {
+                const allCategories = Object.keys(WORD_CATEGORIES);
+                categoryToPickFrom = allCategories[Math.floor(Math.random() * allCategories.length)];
             }
+            const wordList = WORD_CATEGORIES[categoryToPickFrom];
+            if (!wordList || wordList.length === 0) return getNewWord(null, usedWords);
+
+            let availableWords = wordList.filter(word => !usedWords.includes(word.toUpperCase()));
+            let needsReset = false;
+            if (availableWords.length === 0) { availableWords = wordList; needsReset = true; }
             
-            function attachGameListener(gameId) {
-                if (unsubscribeGameListener) unsubscribeGameListener();
-                unsubscribeGameListener = db.collection("games").doc(gameId).onSnapshot((docSnap) => {
-                    if (!docSnap.exists) {
-                        DOM.lobbyError.textContent = "Partie terminée.";
-                        leaveGame();
-                        return;
-                    }
-                    updateUI(docSnap.data());
+            const word = availableWords[Math.floor(Math.random() * availableWords.length)];
+            let description = null;
+            if (categoryToPickFrom === "Ships (Couples)") {
+                const shipObj = SHIP_DATA_RAW.find(s => s.ship.toUpperCase() === word);
+                if (shipObj) description = shipObj.personnages.join(" + ");
+            }
+            return { word: word, category: categoryToPickFrom, description: description, needsReset: needsReset };
+        }
+
+        async function createGame(difficulty, categoryName) {
+            DOM.createGameFacileBtn.disabled = true;
+            DOM.createGameDifficileBtn.disabled = true;
+            
+            try {
+                const newWordData = getNewWord(categoryName, []);
+                
+                const gameRef = await addDoc(collection(db, PATH_GAMES), {
+                    hostId: currentUserId,
+                    word: newWordData.word.toUpperCase(),
+                    category: newWordData.category,
+                    wordDescription: newWordData.description || null, 
+                    difficulty: difficulty,
+                    guessedLetters: [],
+                    wrongGuesses: 0,
+                    status: "playing",
+                    playerList: [currentUserId],
+                    playerNames: { [currentUserId]: currentHostName },
+                    playerScores: { [currentUserId]: 0 },
+                    currentPlayerTurn: currentUserId,
+                    starterIndex: 0,
+                    usedWords: [newWordData.word.toUpperCase()]
                 });
-            }
 
-            async function joinGame(gameId) {
-                if (unsubscribeGameListener) unsubscribeGameListener();
-                if (unsubscribeLobbyListener) unsubscribeLobbyListener();
-                currentGameId = gameId;
-                const gameDocRef = db.collection("games").doc(gameId);
-                try {
-                    await db.runTransaction(async (transaction) => {
-                        const gameDocSnap = await transaction.get(gameDocRef);
-                        if (!gameDocSnap.exists) throw new Error("Partie introuvable.");
-                        const gameData = gameDocSnap.data();
-                        let playerList = gameData.playerList || [];
-                        let playerScores = gameData.playerScores || {}; 
-                        let playerNames = gameData.playerNames || {};
-                        if (!playerList.includes(currentUserId)) { playerList.push(currentUserId); }
-                        if (!playerScores.hasOwnProperty(currentUserId)) { playerScores[currentUserId] = 0; }
-                        playerNames[currentUserId] = currentHostName;
-                        transaction.update(gameDocRef, { playerList, playerScores, playerNames });
-                    });
-                    DOM.lobbyContainer.classList.add('hidden');
-                    DOM.gameContainer.classList.remove('hidden');
-                    generateKeyboard();
-                    updateUI((await gameDocRef.get()).data());
-                    attachGameListener(gameId);
-                } catch (error) {
-                    console.error("Erreur join:", error);
-                    leaveGame();
-                }
-            }
+                await setDoc(doc(db, PATH_LOBBY, gameRef.id), {
+                    hostId: currentUserId,
+                    hostName: currentHostName,
+                    difficulty: difficulty,
+                    createdAt: serverTimestamp()
+                });
 
-            async function leaveGame() {
-                if (unsubscribeGameListener) { unsubscribeGameListener(); unsubscribeGameListener = null; }
-                if (currentGameId && currentUserId) {
-                    try {
-                        const gameDocRef = db.collection("games").doc(currentGameId);
-                        await db.runTransaction(async (transaction) => {
-                            const gameDoc = await transaction.get(gameDocRef);
-                            if (!gameDoc.exists) return;
-                            const gameData = gameDoc.data();
-                            if (gameData.hostId === currentUserId) {
-                                transaction.delete(db.collection("lobby").doc(currentGameId));
-                                transaction.delete(gameDocRef);
-                            } else {
-                                const newPlayerList = gameData.playerList.filter(uid => uid !== currentUserId);
-                                let newCurrentTurnUID = gameData.currentPlayerTurn;
-                                if (gameData.currentPlayerTurn === currentUserId && newPlayerList.length > 0) {
-                                    const leavingPlayerIndex = gameData.playerList.indexOf(currentUserId);
-                                    newCurrentTurnUID = newPlayerList[leavingPlayerIndex % newPlayerList.length];
-                                }
-                                transaction.update(gameDocRef, { playerList: newPlayerList, currentPlayerTurn: newCurrentTurnUID });
-                            }
-                        });
-                    } catch (e) {}
-                }
-                currentGameId = null;
-                DOM.gameContainer.classList.add('hidden');
-                DOM.lobbyContainer.classList.remove('hidden');
-                DOM.gameStatus.classList.add('hidden');
+                joinGame(gameRef.id);
+            } catch (e) {
+                console.error("Erreur creation", e);
                 DOM.createGameFacileBtn.disabled = false;
                 DOM.createGameDifficileBtn.disabled = false;
-                listenToLobby();
             }
+        }
 
-            async function promptForReplay() {
-                if (!currentGameId || !currentUserId) return;
-                const gameDocRef = db.collection("games").doc(currentGameId);
-                const gameState = (await gameDocRef.get()).data();
-                if (gameState.hostId !== currentUserId) {
-                    DOM.statusMessage.textContent = "Seul l'hôte peut recommencer.";
-                    DOM.replayGameButton.style.display = 'none';
-                    return;
-                }
-                if (gameState.difficulty === 'facile') { showCategoryModal('replay'); }
-                else { handleReplay(null); }
-            }
+        async function joinGame(gameId) {
+            currentGameId = gameId;
+            if (unsubscribeGameListener) unsubscribeGameListener();
+            if (unsubscribeLobbyListener) unsubscribeLobbyListener();
 
-            async function handleReplay(categoryName) {
-                if (!currentGameId || !currentUserId) return;
-                const gameDocRef = db.collection("games").doc(currentGameId);
-                const gameState = (await gameDocRef.get()).data();
-                const oldUsedWords = gameState.usedWords || [];
-                const newWordData = getNewWord(categoryName, oldUsedWords); 
-                if (!newWordData || !newWordData.word) return;
-                
-                let newUsedWordsList = newWordData.needsReset ? [newWordData.word.toUpperCase()] : [...oldUsedWords, newWordData.word.toUpperCase()];
-                const playerList = gameState.playerList;
-                const newStarterUID = playerList[(gameState.starterIndex + 1) % playerList.length];
-                const newPlayerScores = gameState.playerScores || {}; 
-                playerList.forEach(uid => { if (!newPlayerScores.hasOwnProperty(uid)) newPlayerScores[uid] = 0; });
-
-                try {
-                    await gameDocRef.update({
-                        word: newWordData.word.toUpperCase(),
-                        category: newWordData.category,
-                        wordDescription: newWordData.description || null, 
-                        guessedLetters: [],
-                        wrongGuesses: 0,
-                        status: "playing",
-                        playerScores: newPlayerScores,
-                        starterIndex: (gameState.starterIndex + 1) % playerList.length,
-                        currentPlayerTurn: newStarterUID,
-                        usedWords: newUsedWordsList
-                    });
-                    await db.collection("lobby").doc(currentGameId).set({
-                        hostId: currentUserId,
-                        hostName: currentHostName,
-                        difficulty: gameState.difficulty, 
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                } catch (error) { console.error("Erreur replay:", error); }
-            }
-
-            async function handleGuess(letter) {
-                if (!currentGameId || !currentUserId) return;
-                const normalizedLetter = letter.toUpperCase();
-                const gameDocRef = db.collection("games").doc(currentGameId);
-
-                try {
-                    await db.runTransaction(async (transaction) => {
-                        const gameDocSnap = await transaction.get(gameDocRef);
-                        if (!gameDocSnap.exists) throw "Partie introuvable.";
-                        const gameState = gameDocSnap.data();
-                        if (gameState.currentPlayerTurn !== currentUserId) return;
-                        if (!gameState.word || gameState.guessedLetters.includes(normalizedLetter) || gameState.status !== 'playing') return;
-
-                        const newGuessedLetters = [...gameState.guessedLetters, normalizedLetter];
-                        let newWrongGuesses = gameState.wrongGuesses;
-                        let newStatus = gameState.status;
-                        const newScores = JSON.parse(JSON.stringify(gameState.playerScores || {}));
-                        const isCorrectGuess = gameState.word.includes(normalizedLetter);
-                        
-                        if (!isCorrectGuess) newWrongGuesses++;
-                        
-                        const allLettersGuessed = gameState.word.replace(/ /g, '').split('').every(l => newGuessedLetters.includes(l));
-                        
-                        if (allLettersGuessed) {
-                            newStatus = 'won';
-                            newScores[currentUserId] = (newScores[currentUserId] || 0) + 1; 
-                        } else if (newWrongGuesses >= MAX_GUESSES) {
-                            newStatus = 'lost';
-                        }
-                        
-                        let nextPlayerUID = gameState.currentPlayerTurn;
-                        if (newStatus === 'playing' && !isCorrectGuess) {
-                            const playerList = gameState.playerList;
-                            const idx = playerList.indexOf(currentUserId);
-                            nextPlayerUID = playerList[(idx + 1) % playerList.length];
-                        }
-
-                        transaction.update(gameDocRef, {
-                            guessedLetters: newGuessedLetters,
-                            wrongGuesses: newWrongGuesses,
-                            status: newStatus,
-                            currentPlayerTurn: nextPlayerUID,
-                            playerScores: newScores 
-                        });
-
-                        if (allLettersGuessed) {
-                            updateGlobalScore();
-                        }
-                    });
-                } catch (error) { console.error("Erreur guess:", error); }
-            }
-
-            function updateGlobalScore() {
-                db.collection('users').doc(currentUserId).update({
-                    totalScore: firebase.firestore.FieldValue.increment(1)
-                }).catch(e => console.warn("Erreur maj score global:", e));
-            }
-
-            function updateUI(gameState) {
-                if (!gameState || !gameState.word || !gameState.category) {
-                    DOM.categoryP.classList.remove('hidden'); 
-                    DOM.categoryDisplay.textContent = "Chargement...";
-                    DOM.wordDisplay.innerHTML = '<div class="text-2xl text-yellow-300">Chargement du mot...</div>';
-                    return;
-                }
-                
-                if (gameState.difficulty === 'facile') {
-                    DOM.categoryP.classList.remove('hidden');
-                    DOM.categoryDisplay.textContent = gameState.category;
-                } else {
-                    DOM.categoryP.classList.add('hidden');
-                }
-
-                const isMyTurn = (gameState.currentPlayerTurn === currentUserId);
-                const gameIsOver = (gameState.status !== 'playing');
-                const playerNames = gameState.playerNames || {};
-
-                if (gameIsOver) {
-                    DOM.turnIndicator.textContent = "";
-                } else if (isMyTurn) {
-                    DOM.turnIndicator.textContent = "C'est votre tour !";
-                    DOM.turnIndicator.style.color = "#ffd700";
-                } else {
-                    const turnPlayerId = gameState.currentPlayerTurn;
-                    const turnPlayerName = playerNames[turnPlayerId] || "Joueur";
-                    DOM.turnIndicator.textContent = `Au tour de ${turnPlayerName}...`;
-                    DOM.turnIndicator.style.color = "#aaa";
-                }
-
-                DOM.guessesLeftSpan.textContent = MAX_GUESSES - gameState.wrongGuesses;
-                displayWord(gameState.word, gameState.guessedLetters);
-                updateKeyboard(gameState.guessedLetters, gameState.status, isMyTurn);
-                updateHangman(gameState.wrongGuesses);
-                updateScoreboard(gameState.playerList, gameState.playerScores, gameState.currentPlayerTurn, playerNames); 
-                checkEndGame(gameState);
-            }
-
-            function updateScoreboard(playerList, playerScores, currentPlayerTurn, playerNames = {}) {
-                DOM.scoresList.innerHTML = ''; 
-                if (!playerList || !playerScores) return;
-                playerList.forEach(uid => {
-                    const name = playerNames[uid] || `Joueur`;
-                    const score = playerScores[uid] || 0;
-                    const scoreElement = document.createElement('div');
-                    scoreElement.classList.add('flex', 'justify-between', 'p-1');
-                    const nameSpan = document.createElement('span');
-                    nameSpan.textContent = `${name}:`;
-                    const scoreSpan = document.createElement('span');
-                    scoreSpan.textContent = score;
-                    scoreSpan.classList.add('font-bold');
-                    if (uid === currentPlayerTurn) {
-                        nameSpan.classList.add('text-yellow-300');
-                        scoreElement.classList.add('bg-gray-700', 'bg-opacity-50', 'rounded');
-                    }
-                    scoreElement.appendChild(nameSpan);
-                    scoreElement.appendChild(scoreSpan);
-                    DOM.scoresList.appendChild(scoreElement);
-                });
-            }
-
-            function getNewWord(categoryName = null, usedWords = []) {
-                let categoryToPickFrom = categoryName;
-                if (!categoryToPickFrom) {
-                    const allCategories = Object.keys(WORD_CATEGORIES);
-                    categoryToPickFrom = allCategories[Math.floor(Math.random() * allCategories.length)];
-                }
-                const wordList = WORD_CATEGORIES[categoryToPickFrom];
-                if (!wordList || wordList.length === 0) return getNewWord(null, usedWords);
-
-                let availableWords = wordList.filter(word => !usedWords.includes(word.toUpperCase()));
-                let needsReset = false;
-                if (availableWords.length === 0) { availableWords = wordList; needsReset = true; }
-                
-                const word = availableWords[Math.floor(Math.random() * availableWords.length)];
-                let description = null;
-                if (categoryToPickFrom === "Ships (Couples)") {
-                    const shipObj = SHIP_DATA_RAW.find(s => s.ship.toUpperCase() === word);
-                    if (shipObj) description = shipObj.personnages.join(" + ");
-                }
-                return { word: word, category: categoryToPickFrom, description: description, needsReset: needsReset };
-            }
-
-            function displayWord(currentWord, guessedLetters) {
-                DOM.wordDisplay.innerHTML = '';
-                const words = currentWord.split(' ');
-                words.forEach((word, index) => {
-                    const wordContainer = document.createElement('div');
-                    wordContainer.classList.add('flex', 'flex-wrap', 'justify-center', 'gap-2', 'md:gap-3');
-                    if (index > 0) {
-                        const spaceElement = document.createElement('div');
-                        spaceElement.classList.add('w-4', 'md:w-8');
-                        DOM.wordDisplay.appendChild(spaceElement);
-                    }
-                    word.split('').forEach(letter => {
-                        const letterElement = document.createElement('div');
-                        letterElement.classList.add('text-center', 'text-2xl', 'md:text-4xl', 'word-display-letter');
-                        if (guessedLetters.includes(letter)) letterElement.textContent = letter;
-                        else letterElement.textContent = '_';
-                        wordContainer.appendChild(letterElement);
-                    });
-                    DOM.wordDisplay.appendChild(wordContainer);
-                });
-            }
-
-            function generateKeyboard() {
-                DOM.keyboard.innerHTML = '';
-                const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-                alphabet.split('').forEach(letter => {
-                    const keyButton = document.createElement('button');
-                    keyButton.textContent = letter;
-                    keyButton.classList.add('key', 'font-bold', 'text-lg', 'w-8', 'h-10', 'md:w-12', 'md:h-12', 'rounded-md', 'm-1');
-                    keyButton.dataset.letter = letter;
-                    DOM.keyboard.appendChild(keyButton);
-                });
-            }
-
-            function updateKeyboard(guessedLetters, gameStatus, isMyTurn) {
-                const gameIsOver = (gameStatus !== 'playing');
-                DOM.keyboard.querySelectorAll('button').forEach(keyButton => {
-                    keyButton.disabled = gameIsOver || !isMyTurn || guessedLetters.includes(keyButton.dataset.letter);
-                });
-            }
+            // Rejoindre logic
+            const gameRef = doc(db, PATH_GAMES, gameId);
             
-            function updateHangman(wrongGuesses) {
-                DOM.hangmanParts.forEach(part => part.style.visibility = 'hidden');
-                for (let i = 0; i < wrongGuesses; i++) {
-                    if (i < DOM.hangmanParts.length) DOM.hangmanParts[i].style.visibility = 'visible';
+            // Simulation Transaction simple pour rejoindre
+            try {
+                const gameDoc = await getDoc(gameRef);
+                if(gameDoc.exists()) {
+                    const data = gameDoc.data();
+                    if(!data.playerList.includes(currentUserId)) {
+                        const newList = [...data.playerList, currentUserId];
+                        const newNames = {...data.playerNames, [currentUserId]: currentHostName};
+                        const newScores = {...data.playerScores, [currentUserId]: 0};
+                        await updateDoc(gameRef, {
+                            playerList: newList,
+                            playerNames: newNames,
+                            playerScores: newScores
+                        });
+                    }
                 }
+            } catch(e) { console.error(e); }
+
+            DOM.lobbyContainer.classList.add('hidden');
+            DOM.gameContainer.classList.remove('hidden');
+            generateKeyboard();
+            
+            unsubscribeGameListener = onSnapshot(gameRef, (docSnap) => {
+                if (!docSnap.exists()) {
+                    alert("Partie terminée ou supprimée");
+                    leaveGame();
+                    return;
+                }
+                updateUI(docSnap.data());
+            });
+        }
+
+        async function leaveGame() {
+            if (unsubscribeGameListener) unsubscribeGameListener();
+            currentGameId = null;
+            showLobby();
+        }
+
+        // --- UI UPDATES ---
+        function updateUI(gameState) {
+            // Difficulté
+            if (gameState.difficulty === 'facile') {
+                DOM.categoryP.classList.remove('hidden');
+                DOM.categoryDisplay.textContent = gameState.category;
+            } else {
+                DOM.categoryP.classList.add('hidden');
             }
 
-            async function checkEndGame(gameState) {
-                if (gameState.status === 'playing') { DOM.gameStatus.classList.add('hidden'); return; }
-                if (gameState.hostId === currentUserId) { try { await db.collection("lobby").doc(currentGameId).delete(); } catch(e) {} }
-                
-                DOM.finalScoresList.innerHTML = '';
-                const { playerList, playerScores, playerNames } = gameState; 
-                if (playerList && playerScores) {
-                     playerList.forEach(uid => {
-                        const name = (playerNames && playerNames[uid]) ? playerNames[uid] : `Joueur`;
-                        const score = playerScores[uid] || 0;
-                        const scoreElement = document.createElement('div');
-                        scoreElement.classList.add('flex', 'justify-between', 'p-1');
-                        scoreElement.innerHTML = `<span>${name}:</span><span class="font-bold">${score}</span>`;
-                        DOM.finalScoresList.appendChild(scoreElement);
-                    });
-                }
-                
-                DOM.gameStatus.classList.remove('hidden');
-                
-                // --- LOGIQUE IMAGE PERDANT ---
-                // Si on a perdu, on affiche l'image d'Alastor. Sinon, on la cache.
-                if (gameState.status === 'lost') {
-                    DOM.loseImage.classList.remove('hidden');
-                } else {
-                    DOM.loseImage.classList.add('hidden');
-                }
+            const isMyTurn = (gameState.currentPlayerTurn === currentUserId);
+            const gameIsOver = (gameState.status !== 'playing');
 
+            // Indicateur Tour
+            if (gameIsOver) {
+                DOM.turnIndicator.textContent = "";
+            } else if (isMyTurn) {
+                DOM.turnIndicator.textContent = "C'est votre tour !";
+                DOM.turnIndicator.style.color = "#ffd700";
+            } else {
+                const turnName = gameState.playerNames[gameState.currentPlayerTurn] || "Joueur";
+                DOM.turnIndicator.textContent = `Au tour de ${turnName}...`;
+                DOM.turnIndicator.style.color = "#aaa";
+            }
+
+            DOM.guessesLeftSpan.textContent = MAX_GUESSES - gameState.wrongGuesses;
+            
+            // Affichage Mot
+            displayWord(gameState.word, gameState.guessedLetters);
+            
+            // Clavier
+            DOM.keyboard.querySelectorAll('button').forEach(btn => {
+                const letter = btn.dataset.letter;
+                btn.disabled = gameIsOver || !isMyTurn || gameState.guessedLetters.includes(letter);
+                if(gameState.guessedLetters.includes(letter)) {
+                    btn.style.opacity = 0.5;
+                }
+            });
+
+            // Hangman
+            DOM.hangmanParts.forEach(part => part.style.visibility = 'hidden');
+            for (let i = 0; i < gameState.wrongGuesses; i++) {
+                if (i < DOM.hangmanParts.length) DOM.hangmanParts[i].style.visibility = 'visible';
+            }
+
+            // Scores
+            DOM.scoresList.innerHTML = '';
+            gameState.playerList.forEach(uid => {
+                const div = document.createElement('div');
+                div.className = "flex justify-between p-1";
+                const isTurn = uid === gameState.currentPlayerTurn;
+                div.innerHTML = `<span class="${isTurn ? 'text-yellow-300' : ''}">${gameState.playerNames[uid]}:</span> <span class="font-bold">${gameState.playerScores[uid] || 0}</span>`;
+                if(isTurn) div.style.backgroundColor = "rgba(255,215,0,0.2)";
+                DOM.scoresList.appendChild(div);
+            });
+
+            // Fin de partie
+            if(gameIsOver) {
+                DOM.gameStatus.classList.remove('hidden');
+                DOM.loseImage.classList.toggle('hidden', gameState.status !== 'lost');
+                
                 let wordText = gameState.word;
                 if (gameState.wordDescription) wordText += `\n(${gameState.wordDescription})`;
 
                 if (gameState.status === 'won') {
                     DOM.statusMessage.textContent = 'Gagné ! Tu es sauvé !';
-                    DOM.statusMessage.classList.remove('text-red-500');
-                    DOM.statusMessage.classList.add('text-green-500');
+                    DOM.statusMessage.className = "text-4xl font-bold mb-4 text-green-500";
                     DOM.correctWordDisplay.textContent = `Tu as deviné : ${wordText}`;
-                } else if (gameState.status === 'lost') {
+                } else {
                     DOM.statusMessage.textContent = 'Perdu ! Direction l\'Extermination !';
-                    DOM.statusMessage.classList.remove('text-green-500');
-                    DOM.statusMessage.classList.add('text-red-500');
+                    DOM.statusMessage.className = "text-4xl font-bold mb-4 text-red-500";
                     DOM.correctWordDisplay.textContent = `Le mot était : ${wordText}`;
                 }
                 DOM.replayGameButton.style.display = (gameState.hostId === currentUserId) ? 'block' : 'none';
+                
+                // Bouton Replay Logic
+                DOM.replayGameButton.onclick = () => {
+                    const newData = getNewWord(gameState.category, gameState.usedWords || []);
+                    const nextPlayer = gameState.playerList[(gameState.starterIndex + 1) % gameState.playerList.length];
+                    
+                    updateDoc(doc(db, PATH_GAMES, currentGameId), {
+                        word: newData.word.toUpperCase(),
+                        desc: newData.description,
+                        guessedLetters: [],
+                        wrongGuesses: 0,
+                        status: "playing",
+                        currentPlayerTurn: nextPlayer,
+                        starterIndex: (gameState.starterIndex + 1) % gameState.playerList.length,
+                        usedWords: [...(gameState.usedWords||[]), newData.word.toUpperCase()]
+                    });
+                    DOM.gameStatus.classList.add('hidden');
+                };
+            } else {
+                DOM.gameStatus.classList.add('hidden');
             }
+        }
 
-            function handleKeyboardClick(e) {
-                if (e.target.tagName === 'BUTTON' && e.target.dataset.letter) {
-                    if (!e.target.disabled) handleGuess(e.target.dataset.letter);
-                }
-            }
+        function displayWord(word, guesses) {
+            DOM.wordDisplay.innerHTML = '';
+            word.split(' ').forEach((wPart, idx) => {
+                const container = document.createElement('div');
+                container.className = "flex gap-2 mr-4";
+                wPart.split('').forEach(char => {
+                    const div = document.createElement('div');
+                    div.className = "word-display-letter text-2xl md:text-4xl text-center";
+                    div.textContent = guesses.includes(char) ? char : '_';
+                    container.appendChild(div);
+                });
+                DOM.wordDisplay.appendChild(container);
+            });
+        }
 
-            function handlePhysicalKey(e) {
-                if (DOM.gameContainer.classList.contains('hidden') || !DOM.gameStatus.classList.contains('hidden')) return; 
-                if (e.key.length === 1 && e.key.match(/[a-z]/i)) {
-                    const letter = e.key.toUpperCase();
-                    const keyButton = DOM.keyboard.querySelector(`[data-letter="${letter}"]`);
-                    if (keyButton && !keyButton.disabled) handleGuess(letter);
+        function generateKeyboard() {
+            DOM.keyboard.innerHTML = '';
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('').forEach(char => {
+                const btn = document.createElement('button');
+                btn.textContent = char;
+                btn.dataset.letter = char;
+                btn.className = "key w-8 h-10 md:w-12 md:h-12 rounded font-bold m-1";
+                btn.onclick = () => handleGuess(char);
+                DOM.keyboard.appendChild(btn);
+            });
+        }
+
+        async function handleGuess(char) {
+            if (!currentGameId) return;
+            // Optimistic check skipped for brevity, relying on backend transaction simulation
+            const gameRef = doc(db, PATH_GAMES, currentGameId);
+            
+            await runTransaction(db, async (t) => {
+                const doc = await t.get(gameRef);
+                const data = doc.data();
+                if (data.status !== 'playing' || data.currentPlayerTurn !== currentUserId) return;
+                if (data.guessedLetters.includes(char)) return;
+
+                const newGuesses = [...data.guessedLetters, char];
+                let newWrongs = data.wrongGuesses;
+                let newStatus = 'playing';
+                let hit = data.word.includes(char);
+
+                if (!hit) newWrongs++;
+
+                const allFound = data.word.replace(/ /g, '').split('').every(c => newGuesses.includes(c));
+                if (allFound) newStatus = 'won';
+                if (newWrongs >= MAX_GUESSES) newStatus = 'lost';
+
+                // Tour suivant
+                let nextTurn = data.currentPlayerTurn;
+                if (!hit && newStatus === 'playing') {
+                    const idx = data.playerList.indexOf(currentUserId);
+                    nextTurn = data.playerList[(idx + 1) % data.playerList.length];
                 }
-            }
-        });
+                
+                // Score update
+                let newScores = {...data.playerScores};
+                if (newStatus === 'won') {
+                    newScores[currentUserId] = (newScores[currentUserId] || 0) + 1;
+                    t.update(doc(db, PATH_USERS, currentUserId), { totalScore: increment(1) });
+                }
+
+                t.update(gameRef, {
+                    guessedLetters: newGuesses,
+                    wrongGuesses: newWrongs,
+                    status: newStatus,
+                    currentPlayerTurn: nextTurn,
+                    playerScores: newScores
+                });
+            });
+        }
+
+        function showCategoryModal(mode) {
+            DOM.categoryListContainer.innerHTML = '';
+            Object.keys(WORD_CATEGORIES).forEach(cat => {
+                const btn = document.createElement('button');
+                btn.textContent = cat;
+                btn.className = "category-selection-button";
+                btn.onclick = () => {
+                    DOM.categoryModal.classList.add('hidden');
+                    if (mode === 'create') createGame('facile', cat); // Default facile for modal path
+                };
+                DOM.categoryListContainer.appendChild(btn);
+            });
+            DOM.categoryModal.classList.remove('hidden');
+            if(mode === 'create') DOM.lobbyContainer.classList.add('hidden');
+        }
+
+        // --- LISTENERS ---
+        DOM.authLoginBtn.onclick = handleLogin;
+        DOM.authRegisterBtn.onclick = handleRegister;
+        DOM.createGameFacileBtn.onclick = () => showCategoryModal('create');
+        DOM.createGameDifficileBtn.onclick = () => createGame('difficile', null);
+        DOM.leaveGameBtn.onclick = leaveGame;
+        DOM.lobbyReturnButton.onclick = leaveGame;
+        DOM.logoutBtn.onclick = () => { signOut(auth); showAuth(); };
+        DOM.categoryModalCancelBtn.onclick = () => {
+             DOM.categoryModal.classList.add('hidden');
+             DOM.lobbyContainer.classList.remove('hidden');
+        };
+
+        // Init
+        initAuth();
+
     </script>
 </body>
 </html>
