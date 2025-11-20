@@ -174,16 +174,17 @@
         </div>
     </div>
 
-    <!-- Jeu (Agrandissement appliqué ici) -->
-    <div id="game-container" class="game-container w-full max-w-7xl mx-auto p-4 md:p-6 rounded-lg text-center hidden relative">
+    <!-- Jeu (Structure modifiée pour le clavier en bas) -->
+    <div id="game-container" class="game-container w-full max-w-7xl mx-auto p-4 md:p-6 rounded-lg text-center hidden relative flex flex-col min-h-[90vh]">
         <button id="leave-game-btn" class="lobby-button absolute top-4 left-4 text-base py-2 px-4 rounded-lg z-10">Quitter</button>
 
         <h1 class="title-font text-5xl md:text-7xl mb-4">Le Pendu</h1>
         <p id="category-p" class="text-xl md:text-2xl text-yellow-300 mb-4">Catégorie: <span id="word-category" class="font-bold">...</span></p>
         <p id="turn-indicator" class="text-2xl text-gray-400 mb-6"></p>
 
-        <div class="flex flex-col md:flex-row justify-center items-start gap-8 mb-6">
-            <!-- Pendu SVG (AGRANDI) -->
+        <!-- Zone Principale : Pendu et Mot -->
+        <div class="flex flex-col md:flex-row justify-center items-center flex-grow gap-8 mb-6">
+            <!-- Pendu (Gauche) -->
             <div id="hangman-box" class="w-full md:w-1/2 flex flex-col items-center">
                 <svg viewBox="0 0 200 250" class="w-full max-w-[400px] h-auto border-4 border-red-900/30 rounded-lg bg-black/20 shadow-[0_0_15px_rgba(255,0,0,0.2)]">
                     <line x1="20" y1="230" x2="180" y2="230" class="gallows-part" />
@@ -204,25 +205,27 @@
                 
                 <p class="text-xl text-red-400 mt-2">Vies restantes: <span id="guesses-left" class="font-bold text-2xl text-red-300">8</span></p>
                 
-                <!-- LISTE DES SCORES SOUS LE PENDU -->
+                <!-- Scores sous le pendu -->
                 <div class="w-full max-w-[400px] mt-4">
                     <h3 class="text-yellow-500 font-bold uppercase border-b border-red-900 mb-2">Joueurs & Scores</h3>
                     <div id="scores-list" class="text-left bg-black/60 border border-red-900/50 p-3 rounded shadow-inner">
-                        <!-- Rempli par JS -->
                         <p class="text-gray-500 italic">En attente...</p>
                     </div>
                 </div>
             </div>
             
-            <!-- Mot et Clavier (Coté Droit ou Dessous) -->
-            <div class="w-full md:w-1/2 flex flex-col items-center justify-center pt-4">
-                <div id="word-display" class="flex flex-wrap justify-center items-center gap-3 mb-8 min-h-[80px]">
+            <!-- Mot à deviner (Droite/Centre) -->
+            <div class="w-full md:w-1/2 flex flex-col items-center justify-center">
+                <div id="word-display" class="flex flex-wrap justify-center items-center gap-3 mb-4 min-h-[80px]">
                     <div class="text-3xl text-yellow-300">Chargement...</div>
                 </div>
-                
-                <div id="keyboard" class="flex flex-wrap justify-center gap-2 max-w-xl mx-auto">
-                    <!-- Clavier généré ici -->
-                </div>
+            </div>
+        </div>
+        
+        <!-- Clavier (Tout en bas) -->
+        <div class="mt-auto pt-4 pb-2 w-full border-t border-red-900/30">
+            <div id="keyboard" class="flex flex-wrap justify-center gap-2 max-w-4xl mx-auto">
+                <!-- Clavier généré ici -->
             </div>
         </div>
         
@@ -231,13 +234,11 @@
             <img id="lose-image" src="./image/Alastor-Demon.png" alt="Alastor Demon" class="demon-image hidden" onerror="this.style.display='none'">
             <h2 id="status-message" class="text-5xl font-bold mb-6"></h2>
             <p id="correct-word" class="text-3xl text-gray-400 mb-10 whitespace-pre-line"></p>
-            
             <div class="mb-8 w-full max-w-md">
                 <h3 class="text-2xl text-yellow-300 font-bold mb-4">Scores Finaux</h3>
                 <div id="final-scores-list" class="text-left bg-black bg-opacity-40 p-4 rounded border border-yellow-600">
                 </div>
             </div>
-
             <div class="flex gap-6">
                 <button id="replay-game-button" class="replay-button text-2xl py-4 px-10 rounded-lg hidden">Recommencer</button>
                 <button id="lobby-return-button" class="replay-button text-2xl py-4 px-10 rounded-lg">Retour au Lobby</button>
@@ -274,7 +275,7 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // --- DONNEES RESTAURÉES ET FORMATÉES VERTICALEMENT ---
+        // --- DONNEES ---
         const SHIP_DATA_RAW = [
           { ship: "Charlastor", personnages: ["Charlie", "Alastor"] },
           { ship: "Chaggie", personnages: ["Charlie", "Vaggie"] },
@@ -760,6 +761,16 @@
         DOM.btns.backLobby.onclick = leaveGame;
         DOM.btns.logout.onclick = () => location.reload();
         DOM.btns.cancelCat.onclick = () => DOM.modal.classList.add('hidden');
+        
+        // Touches Physiques (RESTORED)
+        document.addEventListener('keydown', (e) => {
+            if(currentGameId && !DOM.game.classList.contains('hidden') && DOM.displays.status.classList.contains('hidden')) {
+                const char = e.key.toUpperCase();
+                if(/^[A-Z]$/.test(char)) {
+                     playMove(char);
+                }
+            }
+        });
 
         const bgImg = new Image();
         bgImg.onload = () => document.body.classList.add('bg-loaded');
