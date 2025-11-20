@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Le Pendu de l'Enfer</title>
     
-    <!-- FAVICON AJOUTÉ ICI -->
     <link rel="icon" type="image/png" href="./image/logo-site.png">
     
     <!-- Tailwind CSS -->
@@ -24,11 +23,10 @@
             background-color: #000;
             background-image: radial-gradient(circle, #2b0000 0%, #000000 100%); 
             min-height: 100vh;
-            /* Centrage vertical global */
             display: flex;
             align-items: center;
             justify-content: center;
-            overflow-y: auto; /* Scroll seulement si vraiment nécessaire */
+            overflow-y: auto; 
         }
         
         body.bg-loaded {
@@ -46,11 +44,6 @@
         @keyframes pulse-border-glow {
             0%, 100% { border-color: #ff0000; box-shadow: 0 0 20px #ff0000; }
             50% { border-color: #ff4d4d; box-shadow: 0 0 30px #ff4d4d, 0 0 10px #ff0000; }
-        }
-        @keyframes appear-dramatic {
-            0% { transform: scale(0) rotate(-10deg); opacity: 0; }
-            60% { transform: scale(1.1) rotate(5deg); opacity: 1; }
-            100% { transform: scale(1) rotate(0); }
         }
 
         .title-font {
@@ -75,6 +68,7 @@
             width: 1.2em;
             height: 1.8em;
             line-height: 1.8em;
+            display: inline-block;
         }
         .key {
             background-color: rgba(50, 0, 10, 0.8);
@@ -133,7 +127,6 @@
             max-height: 250px;
             width: auto;
             margin-bottom: 1rem;
-            animation: appear-dramatic 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
             filter: drop-shadow(0 0 20px #ff0000);
             border-radius: 10px;
         }
@@ -182,20 +175,19 @@
         </div>
     </div>
 
-    <!-- Jeu (COMPACTÉ) -->
+    <!-- Jeu -->
     <div id="game-container" class="game-container w-full max-w-6xl mx-auto p-4 rounded-lg text-center hidden relative flex flex-col justify-between h-auto max-h-screen">
         <button id="leave-game-btn" class="lobby-button absolute top-2 left-2 text-sm py-1 px-3 rounded z-10">Quitter</button>
 
-        <!-- En-tête compact -->
         <div class="mb-2">
             <h1 class="title-font text-4xl md:text-6xl mb-1">Le Pendu</h1>
             <p id="category-p" class="text-lg md:text-xl text-yellow-300 mb-1">Catégorie: <span id="word-category" class="font-bold">...</span></p>
             <p id="turn-indicator" class="text-xl text-gray-400"></p>
         </div>
 
-        <!-- Zone Principale : Pendu et Mot -->
+        <!-- Zone Centrale -->
         <div class="flex flex-col md:flex-row justify-center items-center flex-grow gap-4 md:gap-10">
-            <!-- Pendu (Gauche) -->
+            <!-- Pendu -->
             <div id="hangman-box" class="w-full md:w-auto flex flex-col items-center">
                 <svg viewBox="0 0 200 250" class="w-full max-w-[280px] h-auto border-2 border-red-900/30 rounded-lg bg-black/20 shadow-[0_0_10px_rgba(255,0,0,0.2)]">
                     <line x1="20" y1="230" x2="180" y2="230" class="gallows-part" />
@@ -216,7 +208,6 @@
                 
                 <p class="text-lg text-red-400 mt-1">Vies: <span id="guesses-left" class="font-bold text-xl text-red-300">8</span></p>
                 
-                <!-- Scores sous le pendu -->
                 <div class="w-full max-w-[280px] mt-2">
                     <h3 class="text-yellow-500 text-sm font-bold uppercase border-b border-red-900 mb-1">Joueurs</h3>
                     <div id="scores-list" class="text-left text-sm bg-black/60 border border-red-900/50 p-2 rounded shadow-inner max-h-[100px] overflow-y-auto">
@@ -225,30 +216,27 @@
                 </div>
             </div>
             
-            <!-- Mot à deviner (Droite/Centre) -->
+            <!-- Mot (Colonne flexible pour 1 mot par ligne) -->
             <div class="w-full md:w-1/2 flex flex-col items-center justify-center">
-                <div id="word-display" class="flex flex-wrap justify-center items-center gap-2 mb-2 min-h-[60px]">
+                <div id="word-display" class="flex flex-col justify-center items-center gap-3 mb-2 min-h-[60px]">
                     <div class="text-2xl text-yellow-300">Chargement...</div>
                 </div>
             </div>
         </div>
         
-        <!-- Clavier (Tout en bas) -->
+        <!-- Clavier (Bas) -->
         <div class="mt-2 pt-2 w-full border-t border-red-900/30">
-            <div id="keyboard" class="flex flex-wrap justify-center gap-1 max-w-3xl mx-auto">
-                <!-- Clavier généré ici -->
-            </div>
+            <div id="keyboard" class="flex flex-wrap justify-center gap-1 max-w-3xl mx-auto"></div>
         </div>
         
-        <!-- Fin de partie -->
+        <!-- Fin -->
         <div id="game-status" class="game-status fixed inset-0 bg-black bg-opacity-95 flex flex-col justify-center items-center z-50 hidden">
             <img id="lose-image" src="./image/Alastor-Demon.png" alt="Alastor Demon" class="demon-image hidden" onerror="this.style.display='none'">
             <h2 id="status-message" class="text-5xl font-bold mb-6"></h2>
             <p id="correct-word" class="text-3xl text-gray-400 mb-10 whitespace-pre-line"></p>
             <div class="mb-8 w-full max-w-md">
                 <h3 class="text-2xl text-yellow-300 font-bold mb-4">Scores Finaux</h3>
-                <div id="final-scores-list" class="text-left bg-black bg-opacity-40 p-4 rounded border border-yellow-600">
-                </div>
+                <div id="final-scores-list" class="text-left bg-black bg-opacity-40 p-4 rounded border border-yellow-600"></div>
             </div>
             <div class="flex gap-6">
                 <button id="replay-game-button" class="replay-button text-2xl py-4 px-10 rounded-lg hidden">Recommencer</button>
@@ -257,7 +245,7 @@
         </div>
     </div>
 
-    <!-- Modal Catégorie -->
+    <!-- Modal -->
     <div id="category-selection-modal" class="modal-container fixed inset-0 bg-black bg-opacity-90 flex flex-col justify-center items-center z-50 hidden p-4">
         <div class="w-full max-w-md mx-auto p-6 rounded-lg text-center">
             <h2 class="title-font text-3xl mb-6">Catégorie</h2>
@@ -286,116 +274,48 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // --- DONNEES ---
         const SHIP_DATA_RAW = [
-          { ship: "Charlastor", personnages: ["Charlie", "Alastor"] },
-          { ship: "Chaggie", personnages: ["Charlie", "Vaggie"] },
-          { ship: "RadioHusk", personnages: ["Alastor", "Husk"] },
-          { ship: "RadioDust", personnages: ["Alastor", "Angel Dust"] },
-          { ship: "StaticDust", personnages: ["Vox", "Angel Dust"] },
-          { ship: "RadioStatic", personnages: ["Alastor", "Vox"] },
-          { ship: "ValDust", personnages: ["Valentino", "Angel Dust"] },
-          { ship: "Shaggie", personnages: ["Alastor", "Vaggie"] },
-          { ship: "HuskDust", personnages: ["Husk", "Angel Dust"] },
-          { ship: "Huskerdust", personnages: ["Husk", "Angel Dust"] },
-          { ship: "Rosalastor", personnages: ["Rosie", "Alastor"] },
-          { ship: "PentCherry", personnages: ["Sir Pentious", "Cherri Bomb"] },
-          { ship: "CherriBombious", personnages: ["Cherri Bomb", "Sir Pentious"] },
-          { ship: "VelVox", personnages: ["Velvette", "Vox"] },
-          { ship: "VelVee", personnages: ["Velvette", "Valentino"] },
-          { ship: "ValVee", personnages: ["Valentino", "Velvette"] },
-          { ship: "VeesTrio", personnages: ["Vox", "Velvette", "Valentino"] },
-          { ship: "DustyMay", personnages: ["Angel Dust", "Velvette"] },
-          { ship: "Alastora", personnages: ["Alastor", "Niffty"] },
-          { ship: "Aracknie", personnages: ["Angel Dust", "Niffty"] },
-          { ship: "Mimst", personnages: ["Mimzy", "Husk"] },
-          { ship: "RustyLake", personnages: ["Mimzy", "Angel Dust"] },
-          { ship: "Velvetteen", personnages: ["Velvette", "Angel Dust"] },
-          { ship: "BombHound", personnages: ["Cherri Bomb", "Husk"] },
-          { ship: "MimCherry", personnages: ["Mimzy", "Cherri Bomb"] },
-          { ship: "AngelMay", personnages: ["Angel Dust", "Velvette"] },
-          { ship: "Hazzy", personnages: ["Charlie", "Husk"] },
-          { ship: "PentHusk", personnages: ["Sir Pentious", "Husk"] },
-          { ship: "VaggDust", personnages: ["Vaggie", "Angel Dust"] },
-          { ship: "CharlieDust", personnages: ["Charlie", "Angel Dust"] },
-          { ship: "DustBomb", personnages: ["Angel Dust", "Cherri Bomb"] },
-          { ship: "Bombstar", personnages: ["Charlie", "Cherri Bomb"] },
-          { ship: "MayMay", personnages: ["Mimzy", "Velvette"] },
-          { ship: "SilkRazor", personnages: ["Rosie", "Velvette"] },
-          { ship: "Mimvee", personnages: ["Velvette", "Mimzy"] },
-          { ship: "DustStora", personnages: ["Angel Dust", "Alastor"] },
-          { ship: "Pentastor", personnages: ["Sir Pentious", "Alastor"] },
-          { ship: "OverlordsShip", personnages: ["Rosie", "Vox"] },
-          { ship: "VelvetStora", personnages: ["Velvette", "Alastor"] },
-          { ship: "StoraBomb", personnages: ["Alastor", "Cherri Bomb"] },
-          { ship: "SirDust", personnages: ["Sir Pentious", "Angel Dust"] },
-          { ship: "CherriVee", personnages: ["Cherri Bomb", "Velvette"] },
-          { ship: "Lucilith", personnages: ["Lucifer", "Lilith"] },
-          { ship: "Lucilaggie", personnages: ["Lucifer", "Vaggie"] },
-          { ship: "CharlieStar", personnages: ["Charlie", "Lucifer"] },
-          { ship: "Lucistora", personnages: ["Lucifer", "Alastor"] },
-          { ship: "Lucivox", personnages: ["Lucifer", "Vox"] },
-          { ship: "Lucivette", personnages: ["Lucifer", "Velvette"] },
-          { ship: "Lucival", personnages: ["Lucifer", "Valentino"] },
-          { ship: "Lucistatic", personnages: ["Lucifer", "Vox"] },
-          { ship: "Lucimoon", personnages: ["Lucifer", "Angel Dust"] },
-          { ship: "Lustifer", personnages: ["Lucifer", "Rosie"] },
-          { ship: "Luciflow", personnages: ["Lucifer", "Niffty"] },
-          { ship: "Lucibomb", personnages: ["Lucifer", "Cherri Bomb"] },
+          { ship: "Charlastor", personnages: ["Charlie", "Alastor"] }, { ship: "Chaggie", personnages: ["Charlie", "Vaggie"] },
+          { ship: "RadioHusk", personnages: ["Alastor", "Husk"] }, { ship: "RadioDust", personnages: ["Alastor", "Angel Dust"] },
+          { ship: "StaticDust", personnages: ["Vox", "Angel Dust"] }, { ship: "RadioStatic", personnages: ["Alastor", "Vox"] },
+          { ship: "ValDust", personnages: ["Valentino", "Angel Dust"] }, { ship: "Shaggie", personnages: ["Alastor", "Vaggie"] },
+          { ship: "HuskDust", personnages: ["Husk", "Angel Dust"] }, { ship: "Huskerdust", personnages: ["Husk", "Angel Dust"] },
+          { ship: "Rosalastor", personnages: ["Rosie", "Alastor"] }, { ship: "PentCherry", personnages: ["Sir Pentious", "Cherri Bomb"] },
+          { ship: "CherriBombious", personnages: ["Cherri Bomb", "Sir Pentious"] }, { ship: "VelVox", personnages: ["Velvette", "Vox"] },
+          { ship: "VelVee", personnages: ["Velvette", "Valentino"] }, { ship: "ValVee", personnages: ["Valentino", "Velvette"] },
+          { ship: "VeesTrio", personnages: ["Vox", "Velvette", "Valentino"] }, { ship: "DustyMay", personnages: ["Angel Dust", "Velvette"] },
+          { ship: "Alastora", personnages: ["Alastor", "Niffty"] }, { ship: "Aracknie", personnages: ["Angel Dust", "Niffty"] },
+          { ship: "Mimst", personnages: ["Mimzy", "Husk"] }, { ship: "RustyLake", personnages: ["Mimzy", "Angel Dust"] },
+          { ship: "Velvetteen", personnages: ["Velvette", "Angel Dust"] }, { ship: "BombHound", personnages: ["Cherri Bomb", "Husk"] },
+          { ship: "MimCherry", personnages: ["Mimzy", "Cherri Bomb"] }, { ship: "AngelMay", personnages: ["Angel Dust", "Velvette"] },
+          { ship: "Hazzy", personnages: ["Charlie", "Husk"] }, { ship: "PentHusk", personnages: ["Sir Pentious", "Husk"] },
+          { ship: "VaggDust", personnages: ["Vaggie", "Angel Dust"] }, { ship: "CharlieDust", personnages: ["Charlie", "Angel Dust"] },
+          { ship: "DustBomb", personnages: ["Angel Dust", "Cherri Bomb"] }, { ship: "Bombstar", personnages: ["Charlie", "Cherri Bomb"] },
+          { ship: "MayMay", personnages: ["Mimzy", "Velvette"] }, { ship: "SilkRazor", personnages: ["Rosie", "Velvette"] },
+          { ship: "Mimvee", personnages: ["Velvette", "Mimzy"] }, { ship: "DustStora", personnages: ["Angel Dust", "Alastor"] },
+          { ship: "Pentastor", personnages: ["Sir Pentious", "Alastor"] }, { ship: "OverlordsShip", personnages: ["Rosie", "Vox"] },
+          { ship: "VelvetStora", personnages: ["Velvette", "Alastor"] }, { ship: "StoraBomb", personnages: ["Alastor", "Cherri Bomb"] },
+          { ship: "SirDust", personnages: ["Sir Pentious", "Angel Dust"] }, { ship: "CherriVee", personnages: ["Cherri Bomb", "Velvette"] },
+          { ship: "Lucilith", personnages: ["Lucifer", "Lilith"] }, { ship: "Lucilaggie", personnages: ["Lucifer", "Vaggie"] },
+          { ship: "CharlieStar", personnages: ["Charlie", "Lucifer"] }, { ship: "Lucistora", personnages: ["Lucifer", "Alastor"] },
+          { ship: "Lucivox", personnages: ["Lucifer", "Vox"] }, { ship: "Lucivette", personnages: ["Lucifer", "Velvette"] },
+          { ship: "Lucival", personnages: ["Lucifer", "Valentino"] }, { ship: "Lucistatic", personnages: ["Lucifer", "Vox"] },
+          { ship: "Lucimoon", personnages: ["Lucifer", "Angel Dust"] }, { ship: "Lustifer", personnages: ["Lucifer", "Rosie"] },
+          { ship: "Luciflow", personnages: ["Lucifer", "Niffty"] }, { ship: "Lucibomb", personnages: ["Lucifer", "Cherri Bomb"] },
           { ship: "Lucistious", personnages: ["Lucifer", "Sir Pentious"] }
         ];
 
         const WORD_CATEGORIES = {
-            "Personnage": [
-                "ADAM", "ALASTOR", "ANGEL DUST", "ASMODEUS", "BEELZEBUB", "CARMILLA CARMINE", 
-                "CHARLIE MORNINGSTAR", "CHERRI BOMB", "EMILY", "HUSK", "LILITH MORNINGSTAR", 
-                "LUCIFER MORNINGSTAR", "LUTE", "MAMMON", "MIMZY", "NIFFTY", "ROSIE", 
-                "SAINT PIERRE", "SATAN", "SERA", "SIR PENTIOUS", "STOLAS", "VALENTINO", 
-                "VAGGIE", "VELVETTE", "VOX", "ZESTIAL",
-                "ABEL", "BAXTER", "DAZZLE", "FAT NUGGETS", "KATIE KILLJOY", "KEEKEE", 
-                "RAZZLE", "SUSAN", "TOM TRENCH", "TRAVIS", "ZEEZI", 
-                "AGENT ONE", "AGENT TWO", "BLITZO", "FIZZAROLLI", "LOONA", "MARTHA", 
-                "MILLIE", "MOXXIE", "OCTAVIA", "RALPHIE", "STRIKER", "LEVIATHAN",
-                "EGG BOIZ", "ANDREALPHUS", "SALLIE MAY", "WALLY WACKFORD"
-            ],
-            "Lieu & Faction": [
-                "CERCLE DE L ORGUEIL", "CANNIBAL TOWN", "ENFER", "HAZBIN HOTEL", "HELLAVERSE", 
-                "PARADIS", "HEAVEN", "PENTAGRAM CITY", "V TOWER", "LES VEES", "VOXTEK",
-                "IMP", "CERCLE DE LA COLERE", "CERCLE DE L AVARICE", "CERCLE DE LA PARESSE",
-                "CERCLE DE LA GOURMANDISE", "CERCLE DE LA LUXURE", "CERCLE DE L ENVIE",
-                "PURGATOIRE", "CERCLE DES PECHES",
-                "MAFIA", "LOO LOO LAND"
-            ],
-            "Espèce & Rang & Objets": [
-                "ARCHANGE", "GOETIA", "CHERUBINS", "EXORCISTES", "WINNERS", "HELLBORN", 
-                "HELLHOUNDS", "IMPS", "OVERLORDS", "PECHEURS", "SINNERS", "SERAPHINS",
-                "DOMINATIONS", "PUISSANCES", "TRONE", "VERTUS", "SUCCUBES", "DEMON DECHU",
-                "PACTE", "CONTRAT", "GRIMOIRE", "AME", "DAMNES", "PECHE",
-                "ANGE", "DEMON", "PORTAIL", "GUERRE", "BARRIERE MAGIQUE",
-                "ARS GOETIA", "PRINCE DEMON", "ROI DE L ENFER", "REINE DE L ENFER",
-                "ARME ANGELIQUE", "LANCE ANGELIQUE", "AUREOLE"
-            ],
-            "Musique (EN)": [
-                "HAPPY DAY IN HELL", "HELL IS FOREVER", "STAYED GONE", "IT STARTS WITH SORRY",
-                "RESPECTLESS", "WHATEVER IT TAKES", "POISON", "LOSER, BABY", "HELLS GREATEST DAD",
-                "MORE THAN ANYTHING", "WELCOME TO HEAVEN", "OUT FOR LOVE", "TRUST US", "LIKE YOU",
-                "SERA CONFESSION", "GRAVITY", "PISS", "SPEEDRUN TO REDEMPTION", "DONT YOU FORGET",
-                "CLEAN IT UP", "BAD WITH US", "VOX POPULI", "VOX DEI", "LOVE IN A BOTTLE",
-                "LOSIN STREAK", "EASY"
-            ],
-            "Musique (FR)": [
-                "UN JOYEUX JOUR EN ENFER", "L ENFER EST ETERNEL", "DEMANDEZ PARDON", "IRRESPECTUEUX",
-                "POISON", "LE MEILLEUR PERE DE L ENFER", "PLUS QUE TOUT", "BIENVENUE AU PARADIS",
-                "FAIS NOUS CONFIANCE", "UNE FOIS QU ON SERA LA HAUT", "LA CONFESSION DE SERA",
-                "GRAVITY", "PISS", "SPEEDRUN VERS LA REDEMPTION", "N OUBLIE PAS", "VOX POPULI",
-                "VOX DEI", "L AMOUR EN BOUTEILLE", "FACILE"
-            ],
+            "Personnage": ["ADAM", "ALASTOR", "ANGEL DUST", "ASMODEUS", "BEELZEBUB", "CARMILLA CARMINE", "CHARLIE MORNINGSTAR", "CHERRI BOMB", "EMILY", "HUSK", "LILITH MORNINGSTAR", "LUCIFER MORNINGSTAR", "LUTE", "MAMMON", "MIMZY", "NIFFTY", "ROSIE", "SAINT PIERRE", "SATAN", "SERA", "SIR PENTIOUS", "STOLAS", "VALENTINO", "VAGGIE", "VELVETTE", "VOX", "ZESTIAL", "ABEL", "BAXTER", "DAZZLE", "FAT NUGGETS", "KATIE KILLJOY", "KEEKEE", "RAZZLE", "SUSAN", "TOM TRENCH", "TRAVIS", "ZEEZI", "AGENT ONE", "AGENT TWO", "BLITZO", "FIZZAROLLI", "LOONA", "MARTHA", "MILLIE", "MOXXIE", "OCTAVIA", "RALPHIE", "STRIKER", "LEVIATHAN", "EGG BOIZ", "ANDREALPHUS", "SALLIE MAY", "WALLY WACKFORD"],
+            "Lieu & Faction": ["CERCLE DE L ORGUEIL", "CANNIBAL TOWN", "ENFER", "HAZBIN HOTEL", "HELLAVERSE", "PARADIS", "HEAVEN", "PENTAGRAM CITY", "V TOWER", "LES VEES", "VOXTEK", "IMP", "CERCLE DE LA COLERE", "CERCLE DE L AVARICE", "CERCLE DE LA PARESSE", "CERCLE DE LA GOURMANDISE", "CERCLE DE LA LUXURE", "CERCLE DE L ENVIE", "PURGATOIRE", "CERCLE DES PECHES", "MAFIA", "LOO LOO LAND"],
+            "Espèce & Rang & Objets": ["ARCHANGE", "GOETIA", "CHERUBINS", "EXORCISTES", "WINNERS", "HELLBORN", "HELLHOUNDS", "IMPS", "OVERLORDS", "PECHEURS", "SINNERS", "SERAPHINS", "DOMINATIONS", "PUISSANCES", "TRONE", "VERTUS", "SUCCUBES", "DEMON DECHU", "PACTE", "CONTRAT", "GRIMOIRE", "AME", "DAMNES", "PECHE", "ANGE", "DEMON", "PORTAIL", "GUERRE", "BARRIERE MAGIQUE", "ARS GOETIA", "PRINCE DEMON", "ROI DE L ENFER", "REINE DE L ENFER", "ARME ANGELIQUE", "LANCE ANGELIQUE", "AUREOLE"],
+            "Musique (EN)": ["HAPPY DAY IN HELL", "HELL IS FOREVER", "STAYED GONE", "IT STARTS WITH SORRY", "RESPECTLESS", "WHATEVER IT TAKES", "POISON", "LOSER, BABY", "HELLS GREATEST DAD", "MORE THAN ANYTHING", "WELCOME TO HEAVEN", "OUT FOR LOVE", "TRUST US", "LIKE YOU", "SERA CONFESSION", "GRAVITY", "PISS", "SPEEDRUN TO REDEMPTION", "DONT YOU FORGET", "CLEAN IT UP", "BAD WITH US", "VOX POPULI", "VOX DEI", "LOVE IN A BOTTLE", "LOSIN STREAK", "EASY"],
+            "Musique (FR)": ["UN JOYEUX JOUR EN ENFER", "L ENFER EST ETERNEL", "DEMANDEZ PARDON", "IRRESPECTUEUX", "POISON", "LE MEILLEUR PERE DE L ENFER", "PLUS QUE TOUT", "BIENVENUE AU PARADIS", "FAIS NOUS CONFIANCE", "UNE FOIS QU ON SERA LA HAUT", "LA CONFESSION DE SERA", "GRAVITY", "PISS", "SPEEDRUN VERS LA REDEMPTION", "N OUBLIE PAS", "VOX POPULI", "VOX DEI", "L AMOUR EN BOUTEILLE", "FACILE"],
             "Ships (Couples)": SHIP_DATA_RAW.map(item => item.ship.toUpperCase())
         };
         
         const MAX_GUESSES = 8;
 
-        // DOM
         const DOM = {
             auth: document.getElementById('auth-container'),
             lobby: document.getElementById('lobby-container'),
@@ -579,7 +499,6 @@
             } catch(e) { console.error(e); }
         }
 
-        // MODIFIE: Fonction unifiée pour ouvrir le modal (soit création, soit replay)
         function openCatModal(diff, isReplay = false) {
             DOM.catList.innerHTML = '';
             Object.keys(WORD_CATEGORIES).forEach(cat => {
@@ -589,9 +508,9 @@
                 btn.onclick = () => {
                     DOM.modal.classList.add('hidden');
                     if (isReplay) {
-                        restartGameRound(cat); // Relance le même salon avec nouvelle catégorie
+                        restartGameRound(cat);
                     } else {
-                        createGame(diff, cat); // Crée un nouveau salon
+                        createGame(diff, cat);
                     }
                 };
                 DOM.catList.appendChild(btn);
@@ -646,7 +565,6 @@
             DOM.displays.turn.textContent = isMyTurn ? "C'EST TON TOUR !" : `Tour de ${turnName}`;
             DOM.displays.turn.className = isMyTurn ? "text-3xl font-bold text-yellow-400 animate-pulse" : "text-2xl text-gray-500";
 
-            // Affiche scores en temps réel sous le pendu
             DOM.displays.scoresList.innerHTML = '';
             data.players.forEach(uid => {
                 const pName = data.playerNames[uid] || 'Inconnu';
@@ -659,12 +577,18 @@
             });
 
             DOM.displays.word.innerHTML = '';
-            data.word.split('').forEach(char => {
-                const s = document.createElement('span');
-                s.className = "word-display-letter mx-2 text-4xl md:text-5xl";
-                if(char === ' ') { s.className="mx-3 w-6"; s.textContent = ""; }
-                else { s.textContent = data.guesses.includes(char) ? char : '_'; }
-                DOM.displays.word.appendChild(s);
+            const wordsArr = data.word.split(' ');
+            wordsArr.forEach(wordPart => {
+                const wordRow = document.createElement('div');
+                wordRow.className = "flex flex-wrap justify-center gap-2";
+                
+                wordPart.split('').forEach(char => {
+                     const s = document.createElement('span');
+                     s.className = "word-display-letter mx-1 text-3xl md:text-4xl"; 
+                     s.textContent = data.guesses.includes(char) ? char : '_';
+                     wordRow.appendChild(s);
+                });
+                DOM.displays.word.appendChild(wordRow);
             });
 
             DOM.displays.hangman.forEach((el, i) => {
@@ -713,7 +637,6 @@
                 }
                 const isHost = data.hostId === myPseudoID;
                 DOM.btns.replay.classList.toggle('hidden', !isHost);
-                // MODIFIE: Gère le replay selon la difficulté
                 DOM.btns.replay.onclick = () => replay(data);
             } else {
                 DOM.displays.status.classList.add('hidden');
@@ -742,7 +665,6 @@
                 }
                 if(nextStatus === 'won') {
                     t.update(doc(db, "users", myPseudoID), { score: increment(1) });
-                    // Increment local game score too
                     const newScores = {...d.scores};
                     newScores[myPseudoID] = (newScores[myPseudoID] || 0) + 1;
                     t.update(ref, { scores: newScores });
@@ -751,19 +673,7 @@
             });
         }
 
-        // MODIFIE: Logique de replay qui ouvre le modal si Facile
-        function replay(oldData) {
-            if (oldData.difficulty === 'facile') {
-                openCatModal('facile', true); // true = mode replay
-            } else {
-                // En difficile, on relance direct dans la même catégorie (ou aléatoire selon logique précédente)
-                restartGameRound(oldData.category);
-            }
-        }
-
-        // NOUVEAU: Fonction dédiée pour relancer la manche dans le même salon
         async function restartGameRound(category) {
-            // Récupère les infos actuelles pour la rotation
             const gameRef = doc(db, "games", currentGameId);
             const snap = await getDoc(gameRef);
             if (!snap.exists()) return;
@@ -799,7 +709,6 @@
         DOM.btns.logout.onclick = () => location.reload();
         DOM.btns.cancelCat.onclick = () => DOM.modal.classList.add('hidden');
         
-        // Touches Physiques (RESTORED)
         document.addEventListener('keydown', (e) => {
             if(currentGameId && !DOM.game.classList.contains('hidden') && DOM.displays.status.classList.contains('hidden')) {
                 const char = e.key.toUpperCase();
