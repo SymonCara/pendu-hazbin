@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Special+Elite&display=swap" rel="stylesheet">
 
     <style>
-        /* --- VOTRE CSS D'ORIGINE (Préservé) --- */
+        /* --- CSS IDENTIQUE --- */
         body {
             font-family: 'Special Elite', monospace;
             color: #fce8f3;
@@ -302,7 +302,7 @@
 <body class="min-h-screen flex items-center justify-center p-2">
 
     <!-- Écran de Connexion -->
-    <div id="auth-container" class="auth-container w-full max-w-md mx-auto p-6 md:p-8 rounded-lg text-center">
+    <div id="auth-container" class="auth-container w-full max-w-md mx-auto p-6 md:p-8 rounded-lg text-center hidden">
         <h1 class="title-font text-5xl md:text-6xl mb-6">Check-In</h1>
         <p class="mb-6 text-gray-300">Identifie-toi, âme perdue...</p>
         
@@ -315,7 +315,7 @@
         </div>
         
         <p id="auth-error" class="lobby-error-message mt-4 font-bold"></p>
-        <p class="text-xs text-gray-500 mt-2">Le pseudo sert d'identifiant unique.</p>
+        <p id="loading-msg" class="text-yellow-500 text-sm mt-2 hidden">Connexion aux Enfers en cours...</p>
     </div>
 
     <!-- Lobby -->
@@ -326,10 +326,10 @@
         <button id="logout-btn" class="text-xs text-red-400 underline mb-6 hover:text-white">Se déconnecter</button>
 
         <div class="flex gap-4 mb-4">
-            <button id="create-game-facile-btn" class="lobby-button difficulty-button w-1/2 py-3 px-4 rounded-lg" disabled>
+            <button id="create-game-facile-btn" class="lobby-button difficulty-button w-1/2 py-3 px-4 rounded-lg">
                 Créer (Facile)
             </button>
-            <button id="create-game-difficile-btn" class="lobby-button difficulty-button difficile w-1/2 py-3 px-4 rounded-lg" disabled>
+            <button id="create-game-difficile-btn" class="lobby-button difficulty-button difficile w-1/2 py-3 px-4 rounded-lg">
                 Créer (Difficile)
             </button>
         </div>
@@ -464,7 +464,7 @@
     <!-- SCRIPT FIREBASE V11 ADAPTÉ À VOTRE LOGIQUE -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signOut, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp, runTransaction, increment, query, limit, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- CONFIGURATION ---
@@ -480,7 +480,7 @@
         const PATH_GAMES = `${PATH_ROOT}/games`;
         const PATH_LOBBY = `${PATH_ROOT}/lobby`;
         
-        // --- VOS DONNÉES (COPIÉES DE VOTRE CODE) ---
+        // --- VOS DONNÉES ---
         const MAX_GUESSES = 8;
         
         const SHIP_DATA_RAW = [
@@ -531,6 +531,7 @@
             authLoginBtn: document.getElementById('auth-login-btn'),
             authRegisterBtn: document.getElementById('auth-register-btn'),
             authError: document.getElementById('auth-error'),
+            loadingMsg: document.getElementById('loading-msg'),
             lobbyContainer: document.getElementById('lobby-container'),
             lobbyUsername: document.getElementById('lobby-username'), 
             logoutBtn: document.getElementById('logout-btn'),       
@@ -562,123 +563,118 @@
             categoryModalCancelBtn: document.getElementById('category-modal-cancel-btn')
         };
 
-        let currentUserId = null;
-        let currentHostName = null;
+        // L'ID utilisateur pour le JEU (pas pour Firebase Auth)
+        let currentPlayerPseudoID = null; 
+        let currentDisplayPseudo = null;
         let currentGameId = null;
         let unsubscribeGameListener = null;
         let unsubscribeLobbyListener = null;
         let unsubscribeLeaderboardListener = null;
 
-        // --- AUTH LOGIC ---
-        async function initAuth() {
-             if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                 try { await signInWithCustomToken(auth, __initial_auth_token); } 
-                 catch(e) { console.log("Token custom invalide, attente login manuel"); }
-             }
+        // --- LOGIQUE D'AUTHENTIFICATION PERSONNALISÉE ---
+        // On utilise signInAnonymously UNIQUEMENT pour avoir accès à la base de données.
+        // La vraie logique "Pseudo/Pass" est gérée manuellement via Firestore.
 
-            onAuthStateChanged(auth, async (user) => {
-                if (user) {
-                    currentUserId = user.uid;
-                    const userDoc = await getDoc(doc(db, PATH_USERS, user.uid));
-                    if (userDoc.exists() && userDoc.data().username) {
-                        currentHostName = userDoc.data().username;
-                        showLobby();
-                    } else {
-                        // Cas rare: utilisateur Auth mais pas de doc DB (ou inscription en cours)
-                        // On reste sur login pour l'instant
-                        signOut(auth); 
-                    }
-                } else {
-                    showAuth();
-                }
-            });
+        async function initNetwork() {
+             try {
+                 // 1. Tente connexion avec token si dispo
+                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                     await signInWithCustomToken(auth, __initial_auth_token);
+                 } else {
+                     await signInAnonymously(auth);
+                 }
+                 
+                 DOM.authContainer.classList.remove('hidden');
+                 // Si on avait déjà une session "pseudo" locale (optionnel, pour l'instant on demande login à chaque F5)
+                 
+             } catch(e) {
+                 console.error("Erreur réseau:", e);
+                 DOM.authError.textContent = "Erreur de connexion au serveur (Firebase).";
+             }
         }
 
-        // Génère un email fictif pour mapper le pseudo
-        function getEmailFromPseudo(pseudo) {
-            // Nettoyage simple : minuscules et caractères sûrs uniquement
-            const cleanPseudo = pseudo.toLowerCase().replace(/[^a-z0-9]/g, '');
-            return `${cleanPseudo}@hazbin.fake`;
+        // Transforme "Angel Dust" en "angeldust" pour l'ID unique
+        function sanitizePseudo(pseudo) {
+            return pseudo.toLowerCase().trim().replace(/[^a-z0-9]/g, '');
         }
 
         async function handleRegister() {
-            const pseudo = DOM.authPseudo.value.trim();
-            const password = DOM.authPassword.value;
+            const pseudoInput = DOM.authPseudo.value.trim();
+            const passwordInput = DOM.authPassword.value;
 
-            if (pseudo.length < 3) { DOM.authError.textContent = "Pseudo trop court (min 3)."; return; }
-            if (password.length < 6) { DOM.authError.textContent = "Mot de passe trop court (min 6)."; return; }
+            if (pseudoInput.length < 3) { DOM.authError.textContent = "Pseudo trop court (min 3)."; return; }
+            if (passwordInput.length < 4) { DOM.authError.textContent = "Mot de passe trop court (min 4)."; return; }
 
+            const pseudoID = sanitizePseudo(pseudoInput);
             setLoading(true);
-            DOM.authError.textContent = "";
-            
-            const fakeEmail = getEmailFromPseudo(pseudo);
 
             try {
-                // 1. Création Auth (échouera si email/pseudo déjà pris)
-                const userCredential = await createUserWithEmailAndPassword(auth, fakeEmail, password);
-                const user = userCredential.user;
+                // Vérifie si le pseudo existe déjà
+                const docRef = doc(db, PATH_USERS, pseudoID);
+                const docSnap = await getDoc(docRef);
 
-                // 2. Création Profil DB
-                await setDoc(doc(db, PATH_USERS, user.uid), {
-                    username: pseudo,
-                    totalScore: 0,
-                    createdAt: serverTimestamp()
-                });
-
-                // 3. Mise à jour profil Auth (affichage)
-                await updateProfile(user, { displayName: pseudo });
-
-                // Le listener onAuthStateChanged prendra le relais pour afficher le lobby
-            } catch (error) {
-                console.error("Erreur Inscription:", error);
-                if (error.code === 'auth/email-already-in-use') {
+                if (docSnap.exists()) {
                     DOM.authError.textContent = "Ce pseudo est déjà pris par un autre démon !";
-                } else if (error.code === 'auth/weak-password') {
-                    DOM.authError.textContent = "Mot de passe trop faible.";
                 } else {
-                    DOM.authError.textContent = "Erreur inscription: " + error.message;
+                    // Crée le compte
+                    await setDoc(docRef, {
+                        username: pseudoInput, // Le nom affiché (avec majuscules/espaces)
+                        password: passwordInput, // (En clair pour cette démo sans backend)
+                        totalScore: 0,
+                        createdAt: serverTimestamp()
+                    });
+                    loginSuccess(pseudoID, pseudoInput);
                 }
+            } catch (e) {
+                console.error(e);
+                DOM.authError.textContent = "Erreur inscription: " + e.message;
             } finally {
                 setLoading(false);
             }
         }
 
         async function handleLogin() {
-            const pseudo = DOM.authPseudo.value.trim();
-            const password = DOM.authPassword.value;
+            const pseudoInput = DOM.authPseudo.value.trim();
+            const passwordInput = DOM.authPassword.value;
 
-            if (!pseudo || !password) { DOM.authError.textContent = "Remplissez les deux champs."; return; }
+            if (!pseudoInput || !passwordInput) { DOM.authError.textContent = "Remplissez les champs."; return; }
 
+            const pseudoID = sanitizePseudo(pseudoInput);
             setLoading(true);
-            DOM.authError.textContent = "";
-            
-            const fakeEmail = getEmailFromPseudo(pseudo);
 
             try {
-                await signInWithEmailAndPassword(auth, fakeEmail, password);
-                // Le listener onAuthStateChanged prendra le relais
-            } catch (error) {
-                console.error("Erreur Connexion:", error);
-                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-                    DOM.authError.textContent = "Mauvais pseudo ou mot de passe.";
+                const docRef = doc(db, PATH_USERS, pseudoID);
+                const docSnap = await getDoc(docRef);
+
+                if (!docSnap.exists()) {
+                    DOM.authError.textContent = "Ce pseudo n'existe pas.";
                 } else {
-                    DOM.authError.textContent = "Erreur connexion: " + error.message;
+                    const data = docSnap.data();
+                    if (data.password === passwordInput) {
+                        loginSuccess(pseudoID, data.username);
+                    } else {
+                        DOM.authError.textContent = "Mauvais mot de passe !";
+                    }
                 }
+            } catch (e) {
+                console.error(e);
+                DOM.authError.textContent = "Erreur connexion: " + e.message;
             } finally {
                 setLoading(false);
             }
         }
 
+        function loginSuccess(id, displayName) {
+            currentPlayerPseudoID = id;
+            currentDisplayPseudo = displayName;
+            showLobby();
+        }
+
         function setLoading(isLoading) {
             DOM.authLoginBtn.disabled = isLoading;
             DOM.authRegisterBtn.disabled = isLoading;
-            if (isLoading) {
-                DOM.authLoginBtn.classList.add('opacity-50');
-                DOM.authRegisterBtn.classList.add('opacity-50');
-            } else {
-                DOM.authLoginBtn.classList.remove('opacity-50');
-                DOM.authRegisterBtn.classList.remove('opacity-50');
-            }
+            DOM.loadingMsg.classList.toggle('hidden', !isLoading);
+            DOM.authError.textContent = "";
         }
 
         // --- NAVIGATION ---
@@ -689,6 +685,7 @@
             DOM.authPseudo.value = "";
             DOM.authPassword.value = "";
             DOM.authError.textContent = "";
+            currentPlayerPseudoID = null;
         }
 
         function showLobby() {
@@ -696,9 +693,7 @@
             DOM.lobbyContainer.classList.remove('hidden');
             DOM.gameContainer.classList.add('hidden');
             DOM.gameStatus.classList.add('hidden');
-            DOM.createGameFacileBtn.disabled = false;
-            DOM.createGameDifficileBtn.disabled = false;
-            DOM.lobbyUsername.textContent = currentHostName;
+            DOM.lobbyUsername.textContent = currentDisplayPseudo;
             
             listenToLobby();
             listenToLeaderboard();
@@ -723,7 +718,9 @@
                         const buttonContainer = document.createElement('div');
                         const joinBtn = document.createElement('button');
                         joinBtn.textContent = "Rejoindre";
-                        if (game.hostId === currentUserId) {
+                        
+                        // Vérifie si c'est MA partie (en comparant l'ID Pseudo)
+                        if (game.hostId === currentPlayerPseudoID) {
                             joinBtn.disabled = true;
                             joinBtn.textContent = "Votre partie";
                             const deleteBtn = document.createElement('button');
@@ -746,7 +743,7 @@
         function listenToLeaderboard() {
             if (unsubscribeLeaderboardListener) unsubscribeLeaderboardListener();
             // Limitation : tri simple côté client car index pas garanti
-            unsubscribeLeaderboardListener = onSnapshot(query(collection(db, PATH_USERS), limit(20)), (snapshot) => {
+            unsubscribeLeaderboardListener = onSnapshot(query(collection(db, PATH_USERS), limit(50)), (snapshot) => {
                 let users = [];
                 snapshot.forEach(doc => users.push(doc.data()));
                 users.sort((a, b) => (b.totalScore || 0) - (a.totalScore || 0));
@@ -813,8 +810,9 @@
             try {
                 const newWordData = getNewWord(categoryName, []);
                 
+                // Utilise l'ID Pseudo comme hostId
                 const gameRef = await addDoc(collection(db, PATH_GAMES), {
-                    hostId: currentUserId,
+                    hostId: currentPlayerPseudoID,
                     word: newWordData.word.toUpperCase(),
                     category: newWordData.category,
                     wordDescription: newWordData.description || null, 
@@ -822,17 +820,17 @@
                     guessedLetters: [],
                     wrongGuesses: 0,
                     status: "playing",
-                    playerList: [currentUserId],
-                    playerNames: { [currentUserId]: currentHostName },
-                    playerScores: { [currentUserId]: 0 },
-                    currentPlayerTurn: currentUserId,
+                    playerList: [currentPlayerPseudoID],
+                    playerNames: { [currentPlayerPseudoID]: currentDisplayPseudo },
+                    playerScores: { [currentPlayerPseudoID]: 0 },
+                    currentPlayerTurn: currentPlayerPseudoID,
                     starterIndex: 0,
                     usedWords: [newWordData.word.toUpperCase()]
                 });
 
                 await setDoc(doc(db, PATH_LOBBY, gameRef.id), {
-                    hostId: currentUserId,
-                    hostName: currentHostName,
+                    hostId: currentPlayerPseudoID,
+                    hostName: currentDisplayPseudo,
                     difficulty: difficulty,
                     createdAt: serverTimestamp()
                 });
@@ -853,15 +851,15 @@
             // Rejoindre logic
             const gameRef = doc(db, PATH_GAMES, gameId);
             
-            // Simulation Transaction simple pour rejoindre
             try {
                 const gameDoc = await getDoc(gameRef);
                 if(gameDoc.exists()) {
                     const data = gameDoc.data();
-                    if(!data.playerList.includes(currentUserId)) {
-                        const newList = [...data.playerList, currentUserId];
-                        const newNames = {...data.playerNames, [currentUserId]: currentHostName};
-                        const newScores = {...data.playerScores, [currentUserId]: 0};
+                    // Ajoute le joueur s'il n'y est pas
+                    if(!data.playerList.includes(currentPlayerPseudoID)) {
+                        const newList = [...data.playerList, currentPlayerPseudoID];
+                        const newNames = {...data.playerNames, [currentPlayerPseudoID]: currentDisplayPseudo};
+                        const newScores = {...data.playerScores, [currentPlayerPseudoID]: 0};
                         await updateDoc(gameRef, {
                             playerList: newList,
                             playerNames: newNames,
@@ -893,7 +891,6 @@
 
         // --- UI UPDATES ---
         function updateUI(gameState) {
-            // Difficulté
             if (gameState.difficulty === 'facile') {
                 DOM.categoryP.classList.remove('hidden');
                 DOM.categoryDisplay.textContent = gameState.category;
@@ -901,10 +898,9 @@
                 DOM.categoryP.classList.add('hidden');
             }
 
-            const isMyTurn = (gameState.currentPlayerTurn === currentUserId);
+            const isMyTurn = (gameState.currentPlayerTurn === currentPlayerPseudoID);
             const gameIsOver = (gameState.status !== 'playing');
 
-            // Indicateur Tour
             if (gameIsOver) {
                 DOM.turnIndicator.textContent = "";
             } else if (isMyTurn) {
@@ -918,7 +914,6 @@
 
             DOM.guessesLeftSpan.textContent = MAX_GUESSES - gameState.wrongGuesses;
             
-            // Affichage Mot
             displayWord(gameState.word, gameState.guessedLetters);
             
             // Clavier
@@ -942,7 +937,8 @@
                 const div = document.createElement('div');
                 div.className = "flex justify-between p-1";
                 const isTurn = uid === gameState.currentPlayerTurn;
-                div.innerHTML = `<span class="${isTurn ? 'text-yellow-300' : ''}">${gameState.playerNames[uid]}:</span> <span class="font-bold">${gameState.playerScores[uid] || 0}</span>`;
+                const pseudo = gameState.playerNames[uid] || uid;
+                div.innerHTML = `<span class="${isTurn ? 'text-yellow-300' : ''}">${pseudo}:</span> <span class="font-bold">${gameState.playerScores[uid] || 0}</span>`;
                 if(isTurn) div.style.backgroundColor = "rgba(255,215,0,0.2)";
                 DOM.scoresList.appendChild(div);
             });
@@ -964,9 +960,9 @@
                     DOM.statusMessage.className = "text-4xl font-bold mb-4 text-red-500";
                     DOM.correctWordDisplay.textContent = `Le mot était : ${wordText}`;
                 }
-                DOM.replayGameButton.style.display = (gameState.hostId === currentUserId) ? 'block' : 'none';
+                // Seul l'hôte (celui qui a créé) peut relancer
+                DOM.replayGameButton.style.display = (gameState.hostId === currentPlayerPseudoID) ? 'block' : 'none';
                 
-                // Bouton Replay Logic
                 DOM.replayGameButton.onclick = () => {
                     const newData = getNewWord(gameState.category, gameState.usedWords || []);
                     const nextPlayer = gameState.playerList[(gameState.starterIndex + 1) % gameState.playerList.length];
@@ -1017,13 +1013,12 @@
 
         async function handleGuess(char) {
             if (!currentGameId) return;
-            // Optimistic check skipped for brevity, relying on backend transaction simulation
             const gameRef = doc(db, PATH_GAMES, currentGameId);
             
             await runTransaction(db, async (t) => {
                 const doc = await t.get(gameRef);
                 const data = doc.data();
-                if (data.status !== 'playing' || data.currentPlayerTurn !== currentUserId) return;
+                if (data.status !== 'playing' || data.currentPlayerTurn !== currentPlayerPseudoID) return;
                 if (data.guessedLetters.includes(char)) return;
 
                 const newGuesses = [...data.guessedLetters, char];
@@ -1040,15 +1035,15 @@
                 // Tour suivant
                 let nextTurn = data.currentPlayerTurn;
                 if (!hit && newStatus === 'playing') {
-                    const idx = data.playerList.indexOf(currentUserId);
+                    const idx = data.playerList.indexOf(currentPlayerPseudoID);
                     nextTurn = data.playerList[(idx + 1) % data.playerList.length];
                 }
                 
                 // Score update
                 let newScores = {...data.playerScores};
                 if (newStatus === 'won') {
-                    newScores[currentUserId] = (newScores[currentUserId] || 0) + 1;
-                    t.update(doc(db, PATH_USERS, currentUserId), { totalScore: increment(1) });
+                    newScores[currentPlayerPseudoID] = (newScores[currentPlayerPseudoID] || 0) + 1;
+                    t.update(doc(db, PATH_USERS, currentPlayerPseudoID), { totalScore: increment(1) });
                 }
 
                 t.update(gameRef, {
@@ -1069,7 +1064,7 @@
                 btn.className = "category-selection-button";
                 btn.onclick = () => {
                     DOM.categoryModal.classList.add('hidden');
-                    if (mode === 'create') createGame('facile', cat); // Default facile for modal path
+                    if (mode === 'create') createGame('facile', cat);
                 };
                 DOM.categoryListContainer.appendChild(btn);
             });
@@ -1084,14 +1079,14 @@
         DOM.createGameDifficileBtn.onclick = () => createGame('difficile', null);
         DOM.leaveGameBtn.onclick = leaveGame;
         DOM.lobbyReturnButton.onclick = leaveGame;
-        DOM.logoutBtn.onclick = () => { signOut(auth); showAuth(); };
+        DOM.logoutBtn.onclick = () => { showAuth(); };
         DOM.categoryModalCancelBtn.onclick = () => {
              DOM.categoryModal.classList.add('hidden');
              DOM.lobbyContainer.classList.remove('hidden');
         };
 
-        // Init
-        initAuth();
+        // Démarrage : On s'assure juste que la connexion réseau est là
+        initNetwork();
 
     </script>
 </body>
