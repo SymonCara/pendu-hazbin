@@ -19,12 +19,10 @@
             font-family: 'Special Elite', monospace;
             color: #fce8f3;
             background-color: #000;
-            /* Fond de repli si l'image ne charge pas */
             background-image: radial-gradient(circle, #2b0000 0%, #000000 100%); 
             min-height: 100vh;
         }
         
-        /* Tentative de charger votre image de fond si elle est dans le dossier */
         body.bg-loaded {
             background-image: url('./image/backround.jpg');
             background-size: cover;
@@ -61,7 +59,6 @@
             animation: pulse-border-glow 2.5s ease-in-out infinite;
         }
         
-        /* Éléments du jeu */
         .word-display-letter {
             font-family: 'Special Elite', monospace;
             font-weight: bold;
@@ -133,7 +130,6 @@
             border-radius: 10px;
         }
 
-        /* Scrollbar */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #1a0000; }
         ::-webkit-scrollbar-thumb { background: #800000; border-radius: 4px; }
@@ -142,19 +138,16 @@
 </head>
 <body class="min-h-screen flex items-center justify-center p-2">
 
-    <!-- Écran de Connexion (Visible par défaut) -->
+    <!-- Auth -->
     <div id="auth-container" class="auth-container w-full max-w-md mx-auto p-6 md:p-8 rounded-lg text-center">
         <h1 class="title-font text-5xl md:text-6xl mb-6">Check-In</h1>
         <p class="mb-6 text-gray-300">Identifie-toi, âme perdue...</p>
-        
         <input type="text" id="auth-pseudo" class="auth-input" placeholder="Pseudo Unique" maxlength="15">
         <input type="password" id="auth-password" class="auth-input" placeholder="Mot de passe" maxlength="20">
-        
         <div class="flex gap-2 mt-2">
             <button id="auth-login-btn" class="lobby-button w-1/2 py-3 px-4 rounded-lg text-xl">Connexion</button>
             <button id="auth-register-btn" class="lobby-button difficulty-button w-1/2 py-3 px-4 rounded-lg text-xl">Inscription</button>
         </div>
-        
         <p id="auth-error" class="text-red-500 mt-4 font-bold min-h-[24px]"></p>
         <p id="loading-msg" class="text-yellow-500 text-sm mt-2 hidden">Connexion au serveur...</p>
     </div>
@@ -162,27 +155,17 @@
     <!-- Lobby -->
     <div id="lobby-container" class="lobby-container w-full max-w-md mx-auto p-6 md:p-8 rounded-lg text-center hidden">
         <h1 class="title-font text-5xl md:text-6xl mb-6">Hall de l'Hôtel</h1>
-        
         <p class="text-yellow-300 mb-4">Bienvenue, <span id="lobby-username" class="font-bold text-white">...</span></p>
         <button id="logout-btn" class="text-xs text-red-400 underline mb-6 hover:text-white">Se déconnecter</button>
-
         <div class="flex gap-4 mb-4">
-            <button id="create-game-facile-btn" class="lobby-button difficulty-button w-1/2 py-3 px-4 rounded-lg">
-                Créer (Facile)
-            </button>
-            <button id="create-game-difficile-btn" class="lobby-button difficulty-button difficile w-1/2 py-3 px-4 rounded-lg">
-                Créer (Difficile)
-            </button>
+            <button id="create-game-facile-btn" class="lobby-button difficulty-button w-1/2 py-3 px-4 rounded-lg">Créer (Facile)</button>
+            <button id="create-game-difficile-btn" class="lobby-button difficulty-button difficile w-1/2 py-3 px-4 rounded-lg">Créer (Difficile)</button>
         </div>
-        
         <div class="lobby-separator text-lg text-yellow-500 font-bold my-2">- OU -</div>
-        
         <h2 class="text-xl text-yellow-300">Parties en cours</h2>
         <div id="active-games-list" class="lobby-game-list border border-red-500 rounded mt-4 p-2 bg-black/30 min-h-[100px] max-h-[200px] overflow-y-auto">
             <p id="no-games-message" class="text-gray-400 p-4">Aucune partie en cours...</p>
         </div>
-        
-        <!-- CLASSEMENT -->
         <div class="leaderboard-container mt-6 border-t border-gray-600 pt-4">
             <h2 class="text-xl text-yellow-500 mb-2 title-font">Overlords (Top)</h2>
             <div id="leaderboard-list" class="bg-black bg-opacity-40 rounded p-2 text-left max-h-48 overflow-y-auto">
@@ -191,69 +174,73 @@
         </div>
     </div>
 
-    <!-- Jeu -->
-    <div id="game-container" class="game-container w-full max-w-6xl mx-auto p-2 md:p-4 rounded-lg text-center hidden relative">
-        <button id="leave-game-btn" class="lobby-button absolute top-2 left-2 text-sm py-1 px-3 rounded-lg z-10">Quitter</button>
+    <!-- Jeu (Agrandissement appliqué ici) -->
+    <div id="game-container" class="game-container w-full max-w-7xl mx-auto p-4 md:p-6 rounded-lg text-center hidden relative">
+        <button id="leave-game-btn" class="lobby-button absolute top-4 left-4 text-base py-2 px-4 rounded-lg z-10">Quitter</button>
 
-        <h1 class="title-font text-4xl md:text-6xl mb-2">Le Pendu</h1>
-        <p id="category-p" class="text-lg md:text-xl text-yellow-300 mb-2">Catégorie: <span id="word-category" class="font-bold">...</span></p>
-        <p id="turn-indicator" class="text-xl text-gray-400 mb-4"></p>
+        <h1 class="title-font text-5xl md:text-7xl mb-4">Le Pendu</h1>
+        <p id="category-p" class="text-xl md:text-2xl text-yellow-300 mb-4">Catégorie: <span id="word-category" class="font-bold">...</span></p>
+        <p id="turn-indicator" class="text-2xl text-gray-400 mb-6"></p>
 
-        <div class="flex flex-col md:flex-row justify-around items-center mb-4">
-            <!-- Pendu SVG -->
-            <div id="hangman-box" class="w-full md:w-1/3 mb-4 md:mb-0">
-                <svg viewBox="0 0 200 250" class="max-w-[300px] mx-auto">
+        <div class="flex flex-col md:flex-row justify-center items-start gap-8 mb-6">
+            <!-- Pendu SVG (AGRANDI) -->
+            <div id="hangman-box" class="w-full md:w-1/2 flex flex-col items-center">
+                <svg viewBox="0 0 200 250" class="w-full max-w-[400px] h-auto border-4 border-red-900/30 rounded-lg bg-black/20 shadow-[0_0_15px_rgba(255,0,0,0.2)]">
                     <line x1="20" y1="230" x2="180" y2="230" class="gallows-part" />
                     <line x1="60" y1="230" x2="60" y2="20" class="gallows-part" />
                     <line x1="60" y1="20" x2="140" y2="20" class="gallows-part" />
                     <line x1="140" y1="20" x2="140" y2="50" stroke="#ffd700" stroke-width="3" />
                     <g id="hangman-figure">
-                        <circle cx="140" cy="75" r="20" class="hangman-part" /> <!-- Tête -->
-                        <line x1="140" y1="95" x2="140" y2="160" class="hangman-part" /> <!-- Corps -->
-                        <line x1="140" y1="110" x2="110" y2="140" class="hangman-part" /> <!-- Bras G -->
-                        <line x1="140" y1="110" x2="170" y2="140" class="hangman-part" /> <!-- Bras D -->
-                        <line x1="140" y1="160" x2="120" y2="200" class="hangman-part" /> <!-- Jambe G -->
-                        <line x1="140" y1="160" x2="160" y2="200" class="hangman-part" /> <!-- Jambe D -->
-                        <!-- Yeux morts -->
+                        <circle cx="140" cy="75" r="20" class="hangman-part" />
+                        <line x1="140" y1="95" x2="140" y2="160" class="hangman-part" />
+                        <line x1="140" y1="110" x2="110" y2="140" class="hangman-part" />
+                        <line x1="140" y1="110" x2="170" y2="140" class="hangman-part" />
+                        <line x1="140" y1="160" x2="120" y2="200" class="hangman-part" />
+                        <line x1="140" y1="160" x2="160" y2="200" class="hangman-part" />
                         <path d="M133 70 L137 74 M137 70 L133 74" class="hangman-part" stroke="red" />
                         <path d="M143 70 L147 74 M147 70 L143 74" class="hangman-part" stroke="red" />
                     </g>
                 </svg>
-                <p class="text-lg text-red-400">Vies: <span id="guesses-left" class="font-bold text-xl text-red-300">8</span></p>
-                <div id="scores-list" class="mt-2 text-sm text-left bg-black/40 p-2 rounded"></div>
+                
+                <p class="text-xl text-red-400 mt-2">Vies restantes: <span id="guesses-left" class="font-bold text-2xl text-red-300">8</span></p>
+                
+                <!-- LISTE DES SCORES SOUS LE PENDU -->
+                <div class="w-full max-w-[400px] mt-4">
+                    <h3 class="text-yellow-500 font-bold uppercase border-b border-red-900 mb-2">Joueurs & Scores</h3>
+                    <div id="scores-list" class="text-left bg-black/60 border border-red-900/50 p-3 rounded shadow-inner">
+                        <!-- Rempli par JS -->
+                        <p class="text-gray-500 italic">En attente...</p>
+                    </div>
+                </div>
             </div>
             
-            <!-- Mot -->
-            <div id="word-display" class="w-full md:w-2/3 flex flex-wrap justify-center items-center gap-2 md:gap-3 max-w-full min-h-[60px]">
-                <div class="text-2xl text-yellow-300">Chargement...</div>
+            <!-- Mot et Clavier (Coté Droit ou Dessous) -->
+            <div class="w-full md:w-1/2 flex flex-col items-center justify-center pt-4">
+                <div id="word-display" class="flex flex-wrap justify-center items-center gap-3 mb-8 min-h-[80px]">
+                    <div class="text-3xl text-yellow-300">Chargement...</div>
+                </div>
+                
+                <div id="keyboard" class="flex flex-wrap justify-center gap-2 max-w-xl mx-auto">
+                    <!-- Clavier généré ici -->
+                </div>
             </div>
         </div>
-
-        <!-- Clavier -->
-        <div id="keyboard" class="flex flex-wrap justify-center gap-1 md:gap-2 max-w-3xl mx-auto"></div>
         
-        <!-- Écran de fin de partie -->
+        <!-- Fin de partie -->
         <div id="game-status" class="game-status fixed inset-0 bg-black bg-opacity-95 flex flex-col justify-center items-center z-50 hidden">
-            <!-- Image Alastor cachée par défaut -->
             <img id="lose-image" src="./image/Alastor-Demon.png" alt="Alastor Demon" class="demon-image hidden" onerror="this.style.display='none'">
+            <h2 id="status-message" class="text-5xl font-bold mb-6"></h2>
+            <p id="correct-word" class="text-3xl text-gray-400 mb-10 whitespace-pre-line"></p>
             
-            <h2 id="status-message" class="text-4xl font-bold mb-4"></h2>
-            <p id="correct-word" class="text-2xl text-gray-400 mb-8 whitespace-pre-line"></p>
-            
-            <div class="mb-6 w-full max-w-xs">
-                <h3 class="text-lg text-yellow-300 font-bold mb-2">Scores Finaux</h3>
-                <div id="final-scores-list" class="text-left max-w-xs mx-auto text-gray-300 bg-black bg-opacity-20 p-2 rounded">
-                    <!-- Scores injectés ici -->
+            <div class="mb-8 w-full max-w-md">
+                <h3 class="text-2xl text-yellow-300 font-bold mb-4">Scores Finaux</h3>
+                <div id="final-scores-list" class="text-left bg-black bg-opacity-40 p-4 rounded border border-yellow-600">
                 </div>
             </div>
 
-            <div class="flex gap-4">
-                <button id="replay-game-button" class="replay-button text-xl py-3 px-8 rounded-lg hidden">
-                    Recommencer
-                </button>
-                <button id="lobby-return-button" class="replay-button text-xl py-3 px-8 rounded-lg">
-                    Retour au Lobby 
-                </button>
+            <div class="flex gap-6">
+                <button id="replay-game-button" class="replay-button text-2xl py-4 px-10 rounded-lg hidden">Recommencer</button>
+                <button id="lobby-return-button" class="replay-button text-2xl py-4 px-10 rounded-lg">Retour au Lobby</button>
             </div>
         </div>
     </div>
@@ -267,14 +254,12 @@
         </div>
     </div>
 
-    <!-- SCRIPT (Module ES6 compatible navigateur) -->
+    <!-- SCRIPT -->
     <script type="module">
-        // 1. Imports depuis le CDN (Fonctionne partout)
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp, runTransaction, increment, query, limit, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // 2. VOTRE CONFIGURATION FIREBASE REELLE
         const firebaseConfig = {
           apiKey: "AIzaSyA1-S9RlPXs4nYd-NY4BXdam2g9jUxR7LI",
           authDomain: "pendu-hazbin.firebaseapp.com",
@@ -285,12 +270,11 @@
           measurementId: "G-484X5XH86E"
         };
 
-        // Initialisation
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // --- DONNEES COMPLÈTES ---
+        // --- DONNEES RESTAURÉES ET FORMATÉES VERTICALEMENT ---
         const SHIP_DATA_RAW = [
           { ship: "Charlastor", personnages: ["Charlie", "Alastor"] },
           { ship: "Chaggie", personnages: ["Charlie", "Vaggie"] },
@@ -399,7 +383,7 @@
         
         const MAX_GUESSES = 8;
 
-        // --- DOM ---
+        // DOM
         const DOM = {
             auth: document.getElementById('auth-container'),
             lobby: document.getElementById('lobby-container'),
@@ -433,7 +417,8 @@
                 msg: document.getElementById('status-message'),
                 res: document.getElementById('correct-word'),
                 img: document.getElementById('lose-image'),
-                finalScores: document.getElementById('final-scores-list')
+                finalScores: document.getElementById('final-scores-list'),
+                scoresList: document.getElementById('scores-list')
             },
             modal: document.getElementById('category-selection-modal'),
             catList: document.getElementById('category-list-container')
@@ -444,7 +429,6 @@
         let currentGameId = null;
         let unsubGame = null;
 
-        // --- AUTHENTIFICATION ---
         async function initNetwork() {
             try {
                 DOM.loader.classList.remove('hidden');
@@ -462,21 +446,15 @@
             const pseudo = DOM.authPseudo.value.trim();
             const pass = DOM.authPass.value;
             if(pseudo.length < 3 || pass.length < 4) { DOM.authErr.textContent = "Pseudo (3+) ou MDP (4+) trop court."; return; }
-            
             const id = sanitize(pseudo);
             DOM.authErr.textContent = "Inscription...";
-            
             try {
                 const ref = doc(db, "users", id);
                 const snap = await getDoc(ref);
                 if(snap.exists()) {
                     DOM.authErr.textContent = "Ce pseudo est déjà pris !";
                 } else {
-                    await setDoc(ref, {
-                        username: pseudo,
-                        password: pass, 
-                        score: 0
-                    });
+                    await setDoc(ref, { username: pseudo, password: pass, score: 0 });
                     loginSuccess(id, pseudo);
                 }
             } catch(e) { DOM.authErr.textContent = "Erreur DB: " + e.message; }
@@ -486,10 +464,8 @@
             const pseudo = DOM.authPseudo.value.trim();
             const pass = DOM.authPass.value;
             if(!pseudo || !pass) return;
-            
             const id = sanitize(pseudo);
             DOM.authErr.textContent = "Connexion...";
-            
             try {
                 const snap = await getDoc(doc(db, "users", id));
                 if(!snap.exists()) {
@@ -513,9 +489,7 @@
             startLobbyListeners();
         }
 
-        // --- LOBBY ---
         function startLobbyListeners() {
-            // Liste des jeux
             onSnapshot(collection(db, "lobby"), (snap) => {
                 DOM.displays.games.innerHTML = '';
                 if(snap.empty) {
@@ -526,10 +500,8 @@
                     const g = d.data();
                     const div = document.createElement('div');
                     div.className = "flex justify-between items-center p-2 border-b border-gray-700";
-                    
                     const btn = document.createElement('button');
                     btn.className = "bg-red-800 text-white px-3 py-1 rounded text-sm hover:bg-red-600";
-                    
                     if(g.hostId === myPseudoID) {
                         btn.textContent = "Supprimer";
                         btn.onclick = () => deleteGame(d.id);
@@ -537,20 +509,17 @@
                         btn.textContent = "Rejoindre";
                         btn.onclick = () => joinGame(d.id);
                     }
-                    
                     div.innerHTML = `<span>${g.hostName} (${g.difficulty})</span>`;
                     div.appendChild(btn);
                     DOM.displays.games.appendChild(div);
                 });
             });
 
-            // Classement
             const q = query(collection(db, "users"), limit(20));
             onSnapshot(q, (snap) => {
                 const users = [];
                 snap.forEach(d => users.push(d.data()));
                 users.sort((a,b) => (b.score||0) - (a.score||0));
-                
                 DOM.displays.leaders.innerHTML = '';
                 users.slice(0,10).forEach((u, i) => {
                    const div = document.createElement('div');
@@ -563,10 +532,8 @@
 
         async function createGame(diff, cat) {
             if(!cat) { openCatModal(diff); return; }
-            
             const words = WORD_CATEGORIES[cat];
             const word = words[Math.floor(Math.random() * words.length)];
-            
             let description = null;
             if (cat === "Ships (Couples)") {
                 const shipObj = SHIP_DATA_RAW.find(s => s.ship.toUpperCase() === word);
@@ -596,7 +563,6 @@
                     difficulty: diff,
                     date: serverTimestamp()
                 });
-                
                 joinGame(gRef.id);
             } catch(e) { console.error(e); }
         }
@@ -619,8 +585,6 @@
         async function joinGame(id) {
             currentGameId = id;
             if(unsubGame) unsubGame();
-            
-            // Ajout joueur
             const gRef = doc(db, "games", id);
             try {
                 const snap = await getDoc(gRef);
@@ -635,10 +599,8 @@
                     }
                 }
             } catch(e) {}
-
             DOM.lobby.classList.add('hidden');
             DOM.game.classList.remove('hidden');
-            
             unsubGame = onSnapshot(gRef, (snap) => {
                 if(!snap.exists()) { leaveGame(); alert("Partie terminée."); return; }
                 renderGame(snap.data());
@@ -658,41 +620,46 @@
             DOM.lobby.classList.remove('hidden');
         }
 
-        // --- JEU ---
         function renderGame(data) {
-            // UI Info
             DOM.displays.cat.textContent = data.category;
             DOM.displays.guesses.textContent = MAX_GUESSES - data.wrongs;
             
-            // Tour
             const isMyTurn = data.turn === myPseudoID;
             const turnName = data.playerNames[data.turn] || '?';
             DOM.displays.turn.textContent = isMyTurn ? "C'EST TON TOUR !" : `Tour de ${turnName}`;
-            DOM.displays.turn.className = isMyTurn ? "text-xl font-bold text-yellow-400 animate-pulse" : "text-xl text-gray-500";
+            DOM.displays.turn.className = isMyTurn ? "text-3xl font-bold text-yellow-400 animate-pulse" : "text-2xl text-gray-500";
 
-            // Mot
+            // Affiche scores en temps réel sous le pendu
+            DOM.displays.scoresList.innerHTML = '';
+            data.players.forEach(uid => {
+                const pName = data.playerNames[uid] || 'Inconnu';
+                const pScore = data.scores[uid] || 0;
+                const div = document.createElement('div');
+                div.className = "flex justify-between text-lg p-1 border-b border-red-900/30 last:border-0";
+                div.innerHTML = `<span class="${uid === myPseudoID ? 'text-yellow-300 font-bold' : 'text-gray-300'}">${pName}</span><span class="font-mono font-bold text-white">${pScore}</span>`;
+                if(uid === data.turn) div.classList.add('bg-red-900/40');
+                DOM.displays.scoresList.appendChild(div);
+            });
+
             DOM.displays.word.innerHTML = '';
             data.word.split('').forEach(char => {
                 const s = document.createElement('span');
-                s.className = "word-display-letter mx-1 text-2xl";
-                if(char === ' ') { s.className="mx-2 w-4"; s.textContent = ""; }
+                s.className = "word-display-letter mx-2 text-4xl md:text-5xl";
+                if(char === ' ') { s.className="mx-3 w-6"; s.textContent = ""; }
                 else { s.textContent = data.guesses.includes(char) ? char : '_'; }
                 DOM.displays.word.appendChild(s);
             });
 
-            // Pendu
             DOM.displays.hangman.forEach((el, i) => {
                 el.style.visibility = i < data.wrongs ? 'visible' : 'hidden';
             });
 
-            // Clavier
             DOM.displays.keyboard.innerHTML = '';
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('').forEach(char => {
                 const btn = document.createElement('button');
                 btn.textContent = char;
-                btn.className = "key w-8 h-10 rounded m-1 font-bold";
+                btn.className = "key w-10 h-12 md:w-12 md:h-14 rounded m-1 font-bold text-xl";
                 const played = data.guesses.includes(char);
-                
                 if(played) {
                     btn.disabled = true;
                     btn.style.opacity = "0.3";
@@ -706,33 +673,27 @@
                 DOM.displays.keyboard.appendChild(btn);
             });
 
-            // Fin ?
             if(data.status !== 'playing') {
                 DOM.displays.status.classList.remove('hidden');
                 const won = data.status === 'won';
                 DOM.displays.msg.textContent = won ? "VICTOIRE !" : "PERDU...";
                 DOM.displays.msg.className = won ? "text-5xl font-bold text-green-500 mb-4" : "text-5xl font-bold text-red-500 mb-4";
-                
                 let resText = data.word;
                 if (data.wordDescription) resText += `\n(${data.wordDescription})`;
                 DOM.displays.res.textContent = resText;
+                DOM.displays.img.classList.toggle('hidden', won);
                 
-                DOM.displays.img.classList.toggle('hidden', won); // Affiche Alastor si perdu
-                
-                // Affichage des scores finaux
                 DOM.displays.finalScores.innerHTML = '';
                 if (data.players) {
                     data.players.forEach(uid => {
                         const name = data.playerNames[uid] || 'Joueur';
                         const score = data.scores[uid] || 0;
                         const div = document.createElement('div');
-                        div.className = 'flex justify-between p-1 border-b border-gray-600';
+                        div.className = 'flex justify-between p-2 border-b border-gray-600 text-xl';
                         div.innerHTML = `<span class="text-gray-300">${name}</span><span class="text-yellow-400 font-bold">${score}</span>`;
                         DOM.displays.finalScores.appendChild(div);
                     });
                 }
-
-                // Bouton Replay (Host seulement)
                 const isHost = data.hostId === myPseudoID;
                 DOM.btns.replay.classList.toggle('hidden', !isHost);
                 DOM.btns.replay.onclick = () => replay(data);
@@ -744,41 +705,31 @@
         async function playMove(char) {
             if(!currentGameId) return;
             const ref = doc(db, "games", currentGameId);
-            
             await runTransaction(db, async (t) => {
                 const snap = await t.get(ref);
                 const d = snap.data();
                 if(d.status !== 'playing' || d.turn !== myPseudoID || d.guesses.includes(char)) return;
-
                 const nextGuesses = [...d.guesses, char];
                 let nextWrongs = d.wrongs;
                 let hit = d.word.includes(char);
                 if(!hit) nextWrongs++;
-
-                // Check win/loss
                 const allFound = d.word.replace(/ /g,'').split('').every(c => nextGuesses.includes(c));
                 let nextStatus = 'playing';
                 if(allFound) nextStatus = 'won';
                 if(nextWrongs >= MAX_GUESSES) nextStatus = 'lost';
-
-                // Next Turn
                 let nextTurn = d.turn;
                 if(!hit && nextStatus === 'playing') {
                     const idx = d.players.indexOf(myPseudoID);
                     nextTurn = d.players[(idx + 1) % d.players.length];
                 }
-
-                // Score
                 if(nextStatus === 'won') {
                     t.update(doc(db, "users", myPseudoID), { score: increment(1) });
+                    // Increment local game score too
+                    const newScores = {...d.scores};
+                    newScores[myPseudoID] = (newScores[myPseudoID] || 0) + 1;
+                    t.update(ref, { scores: newScores });
                 }
-
-                t.update(ref, {
-                    guesses: nextGuesses,
-                    wrongs: nextWrongs,
-                    status: nextStatus,
-                    turn: nextTurn
-                });
+                t.update(ref, { guesses: nextGuesses, wrongs: nextWrongs, status: nextStatus, turn: nextTurn });
             });
         }
 
@@ -786,13 +737,11 @@
             const words = WORD_CATEGORIES[oldData.category];
             const newWord = words[Math.floor(Math.random()*words.length)];
             const nextP = oldData.players[(oldData.players.indexOf(oldData.turn)+1)%oldData.players.length];
-
             let description = null;
             if (oldData.category === "Ships (Couples)") {
                 const shipObj = SHIP_DATA_RAW.find(s => s.ship.toUpperCase() === newWord);
                 if (shipObj) description = shipObj.personnages.join(" + ");
             }
-
             await updateDoc(doc(db, "games", currentGameId), {
                 word: newWord,
                 wordDescription: description || null,
@@ -803,7 +752,6 @@
             });
         }
 
-        // --- EVENTS ---
         DOM.btns.login.onclick = login;
         DOM.btns.register.onclick = register;
         DOM.btns.easy.onclick = () => createGame('facile');
@@ -813,14 +761,11 @@
         DOM.btns.logout.onclick = () => location.reload();
         DOM.btns.cancelCat.onclick = () => DOM.modal.classList.add('hidden');
 
-        // Essai de charger l'image de fond
         const bgImg = new Image();
         bgImg.onload = () => document.body.classList.add('bg-loaded');
         bgImg.src = './image/backround.jpg';
 
-        // START
         initNetwork();
-
     </script>
 </body>
 </html>
