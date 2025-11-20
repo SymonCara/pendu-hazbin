@@ -5,19 +5,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Le Pendu de l'Enfer</title>
     
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Polices -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Special+Elite&display=swap" rel="stylesheet">
 
     <style>
-        /* --- CSS IDENTIQUE --- */
+        /* --- STYLE DU JEU --- */
         body {
             font-family: 'Special Elite', monospace;
             color: #fce8f3;
-            background: radial-gradient(circle, #2b0000 0%, #000000 100%); 
+            background-color: #000;
+            /* Fond de repli si l'image ne charge pas */
+            background-image: radial-gradient(circle, #2b0000 0%, #000000 100%); 
             min-height: 100vh;
         }
+        
+        /* Tentative de charger votre image de fond si elle est dans le dossier */
+        body.bg-loaded {
+            background-image: url('./image/backround.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+
+        /* Animations */
         @keyframes pulse-text-glow {
             0%, 100% { text-shadow: 0 0 5px #ff0000, 0 0 10px #ff0000, 0 0 15px #ff4d4d; }
             50% { text-shadow: 0 0 10px #ff0000, 0 0 20px #ff4d4d, 0 0 30px #ff4d4d; }
@@ -25,11 +40,6 @@
         @keyframes pulse-border-glow {
             0%, 100% { border-color: #ff0000; box-shadow: 0 0 20px #ff0000; }
             50% { border-color: #ff4d4d; box-shadow: 0 0 30px #ff4d4d, 0 0 10px #ff0000; }
-        }
-        @keyframes appear-dramatic {
-            0% { transform: scale(0) rotate(-10deg); opacity: 0; }
-            60% { transform: scale(1.1) rotate(5deg); opacity: 1; }
-            100% { transform: scale(1) rotate(0); }
         }
 
         .title-font {
@@ -45,6 +55,8 @@
             box-shadow: 0 0 20px #ff0000;
             animation: pulse-border-glow 2.5s ease-in-out infinite;
         }
+        
+        /* Éléments du jeu */
         .word-display-letter {
             font-family: 'Special Elite', monospace;
             font-weight: bold;
@@ -54,16 +66,11 @@
             height: 2em;
             line-height: 2em;
         }
-        .word-display-letter.space {
-            border-bottom: none;
-        }
         .key {
             background-color: rgba(50, 0, 10, 0.8);
             border: 1px solid #ff0000;
             color: #fce8f3;
             transition: all 0.2s ease;
-            font-family: 'Special Elite', monospace;
-            font-size: 1.1rem;
         }
         .key:hover:not(:disabled) {
             background-color: #ff0000;
@@ -76,163 +83,20 @@
             opacity: 0.5;
             cursor: not-allowed;
         }
-        .hangman-part {
-            stroke: #ffd700;
-            stroke-width: 4;
-            fill: none;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-            visibility: hidden;
-            transition: visibility 0s;
-        }
-        .gallows-part {
-            stroke: #cc0000;
-            stroke-width: 7;
-            fill: none;
-        }
-        .game-status {
-            background-color: rgba(0, 0, 0, 0.9);
-            border: 2px solid #ffd700;
-        }
-        .replay-button, .lobby-button {
+        
+        .hangman-part { stroke: #ffd700; stroke-width: 4; fill: none; stroke-linecap: round; stroke-linejoin: round; visibility: hidden; }
+        .gallows-part { stroke: #cc0000; stroke-width: 7; fill: none; }
+        
+        .lobby-button {
             background-color: #ffd700;
             color: #1a0000;
             font-weight: bold;
             transition: all 0.2s ease;
-            font-family: 'Special Elite', monospace;
         }
-        .replay-button:hover, .lobby-button:hover {
+        .lobby-button:hover {
             background-color: #ff0000;
             color: #fff;
             box-shadow: 0 0 15px #ff0000;
-        }
-        .difficulty-button {
-            background-color: #b8860b;
-            color: #1a0000;
-            font-size: 1.1rem; 
-            padding-top: 0.5rem; 
-            padding-bottom: 0.5rem;
-        }
-        .difficulty-button:disabled {
-            background-color: #555;
-            opacity: 0.7;
-        }
-        .difficulty-button:hover:not(:disabled) {
-             background-color: #ffd700;
-             color: #000;
-        }
-        .difficulty-button.difficile {
-            background-color: #cc0000;
-            color: #fff;
-        }
-        .difficulty-button.difficile:hover:not(:disabled) {
-            background-color: #ff4d4d;
-            color: #000;
-        }
-        .lobby-game-list {
-            max-height: 200px;
-            overflow-y: auto;
-            border: 1px solid #ff0000;
-            border-radius: 8px;
-            margin-top: 1rem;
-            padding: 0.5rem;
-            background-color: rgba(0, 0, 0, 0.3);
-        }
-        .lobby-game-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.75rem 0.5rem;
-            border-bottom: 1px dashed #555;
-        }
-        .lobby-game-item:last-child {
-            border-bottom: none;
-        }
-        .lobby-game-item button {
-            background-color: #cc0000;
-            color: #fff;
-            padding: 0.25rem 0.75rem;
-            border-radius: 5px;
-            font-size: 0.9rem;
-            margin-left: 4px;
-        }
-        .lobby-game-item button:hover {
-            background-color: #ff0000;
-        }
-        .lobby-game-item button:disabled {
-             background-color: #555;
-             opacity: 0.7;
-        }
-        .delete-button {
-            background-color: #800000 !important;
-        }
-        .delete-button:hover {
-             background-color: #cc0000 !important;
-        }
-        .lobby-separator {
-            color: #ffd700;
-            font-weight: bold;
-        }
-        .lobby-error-message {
-            color: #ff0000;
-            text-shadow: 0 0 5px #ff0000;
-            min-height: 1.5rem;
-        }
-        .user-id-display {
-            color: #888;
-            font-size: 0.8rem;
-        }
-        #scores-list .flex {
-            border-bottom: 1px dashed #444;
-        }
-        #scores-list .flex:last-child {
-            border-bottom: none;
-        }
-        .category-modal {
-            background-color: rgba(0, 0, 0, 0.9);
-            border: 2px solid #ffd700;
-        }
-        #category-list-container {
-            max-height: 60vh;
-            overflow-y: auto;
-        }
-        .category-selection-button {
-            background-color: rgba(50, 0, 10, 0.8);
-            border: 1px solid #ff0000;
-            color: #fce8f3;
-            transition: all 0.2s ease;
-            font-family: 'Special Elite', monospace;
-            font-size: 1.1rem;
-            width: 100%;
-            margin-bottom: 0.5rem;
-            padding: 0.75rem;
-        }
-        .category-selection-button:hover {
-            background-color: #ff0000;
-            color: #000;
-            transform: scale(1.02);
-        }
-        .modal-cancel-button {
-            background-color: #555;
-            color: #fff;
-        }
-        .modal-cancel-button:hover {
-            background-color: #888;
-            color: #000;
-        }
-        #category-list-container::-webkit-scrollbar {
-            display: none;
-        }
-        #category-list-container {
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-        }
-        .word-description {
-            display: block;
-            font-size: 0.8em;
-            color: #ffd700;
-            margin-top: 0.5rem;
-            font-style: italic;
         }
         .auth-input {
             background-color: rgba(0, 0, 0, 0.6);
@@ -242,57 +106,20 @@
             border-radius: 0.5rem;
             width: 100%;
             margin-bottom: 1rem;
-            font-family: 'Special Elite', monospace;
             outline: none;
         }
-        .auth-input:focus {
-            box-shadow: 0 0 10px #ff0000;
-            border-color: #ffd700;
+        .difficulty-button { background-color: #b8860b; color: #1a0000; }
+        .difficulty-button.difficile { background-color: #cc0000; color: #fff; }
+        
+        .category-selection-button {
+            background-color: rgba(50, 0, 10, 0.8);
+            border: 1px solid #ff0000;
+            color: #fce8f3;
+            width: 100%; margin-bottom: 0.5rem; padding: 0.75rem;
         }
-        .auth-input::placeholder {
-            color: #995555;
-        }
-        .leaderboard-container {
-            margin-top: 1.5rem;
-            border-top: 1px solid #555;
-            padding-top: 1rem;
-        }
-        .leaderboard-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.5rem;
-            border-bottom: 1px dashed #444;
-            font-size: 0.9rem;
-        }
-        .leaderboard-item:last-child {
-            border-bottom: none;
-        }
-        .rank-badge {
-            display: inline-block;
-            width: 24px;
-            height: 24px;
-            line-height: 24px;
-            border-radius: 50%;
-            background-color: #333;
-            color: #fff;
-            text-align: center;
-            margin-right: 0.5rem;
-            font-weight: bold;
-        }
-        .rank-1 { background-color: #ffd700; color: #000; box-shadow: 0 0 5px #ffd700; }
-        .rank-2 { background-color: #c0c0c0; color: #000; }
-        .rank-3 { background-color: #cd7f32; color: #000; }
+        .category-selection-button:hover { background-color: #ff0000; color: #000; }
 
-        .demon-image {
-            max-height: 250px;
-            width: auto;
-            margin-bottom: 1rem;
-            animation: appear-dramatic 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-            filter: drop-shadow(0 0 20px #ff0000);
-            border-radius: 10px;
-        }
-        /* Styles supplémentaires pour scrollbar */
+        /* Scrollbar */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #1a0000; }
         ::-webkit-scrollbar-thumb { background: #800000; border-radius: 4px; }
@@ -301,8 +128,8 @@
 </head>
 <body class="min-h-screen flex items-center justify-center p-2">
 
-    <!-- Écran de Connexion -->
-    <div id="auth-container" class="auth-container w-full max-w-md mx-auto p-6 md:p-8 rounded-lg text-center hidden">
+    <!-- Écran de Connexion (Visible par défaut) -->
+    <div id="auth-container" class="auth-container w-full max-w-md mx-auto p-6 md:p-8 rounded-lg text-center">
         <h1 class="title-font text-5xl md:text-6xl mb-6">Check-In</h1>
         <p class="mb-6 text-gray-300">Identifie-toi, âme perdue...</p>
         
@@ -314,8 +141,8 @@
             <button id="auth-register-btn" class="lobby-button difficulty-button w-1/2 py-3 px-4 rounded-lg text-xl">Inscription</button>
         </div>
         
-        <p id="auth-error" class="lobby-error-message mt-4 font-bold"></p>
-        <p id="loading-msg" class="text-yellow-500 text-sm mt-2 hidden">Connexion aux Enfers en cours...</p>
+        <p id="auth-error" class="text-red-500 mt-4 font-bold min-h-[24px]"></p>
+        <p id="loading-msg" class="text-yellow-500 text-sm mt-2 hidden">Connexion au serveur...</p>
     </div>
 
     <!-- Lobby -->
@@ -334,758 +161,624 @@
             </button>
         </div>
         
-        <div class="lobby-separator text-lg my-2">- OU -</div>
+        <div class="lobby-separator text-lg text-yellow-500 font-bold my-2">- OU -</div>
         
         <h2 class="text-xl text-yellow-300">Parties en cours</h2>
-        <div id="active-games-list" class="lobby-game-list">
+        <div id="active-games-list" class="lobby-game-list border border-red-500 rounded mt-4 p-2 bg-black/30 min-h-[100px] max-h-[200px] overflow-y-auto">
             <p id="no-games-message" class="text-gray-400 p-4">Aucune partie en cours...</p>
         </div>
         
         <!-- CLASSEMENT -->
-        <div class="leaderboard-container">
-            <h2 class="text-xl text-yellow-500 mb-2 title-font">Overlords (Classement)</h2>
+        <div class="leaderboard-container mt-6 border-t border-gray-600 pt-4">
+            <h2 class="text-xl text-yellow-500 mb-2 title-font">Overlords (Top)</h2>
             <div id="leaderboard-list" class="bg-black bg-opacity-40 rounded p-2 text-left max-h-48 overflow-y-auto">
-                <p class="text-gray-500 text-center text-sm">Chargement des scores...</p>
+                <p class="text-gray-500 text-center text-sm">Chargement...</p>
             </div>
         </div>
-
-        <p id="lobby-error" class="lobby-error-message mt-4 font-bold"></p>
     </div>
 
     <!-- Jeu -->
-    <div id="game-container" class="game-container w-full max-w-6xl mx-auto p-2 md:p-4 rounded-lg text-center hidden">
-        
-        <button id="leave-game-btn" class="lobby-button absolute top-2 left-2 text-sm py-1 px-3 rounded-lg z-10">
-            Quitter
-        </button>
+    <div id="game-container" class="game-container w-full max-w-6xl mx-auto p-2 md:p-4 rounded-lg text-center hidden relative">
+        <button id="leave-game-btn" class="lobby-button absolute top-2 left-2 text-sm py-1 px-3 rounded-lg z-10">Quitter</button>
 
-        <h1 class="title-font text-4xl md:text-6xl mb-2">Le Pendu de l'Enfer</h1>
-        
-        <p id="category-p" class="text-lg md:text-xl text-yellow-300 mb-2">Catégorie: <span id="word-category" class="font-bold">Chargement...</span></p>
-        
+        <h1 class="title-font text-4xl md:text-6xl mb-2">Le Pendu</h1>
+        <p id="category-p" class="text-lg md:text-xl text-yellow-300 mb-2">Catégorie: <span id="word-category" class="font-bold">...</span></p>
         <p id="turn-indicator" class="text-xl text-gray-400 mb-4"></p>
 
         <div class="flex flex-col md:flex-row justify-around items-center mb-4">
-            
+            <!-- Pendu SVG -->
             <div id="hangman-box" class="w-full md:w-1/3 mb-4 md:mb-0">
                 <svg viewBox="0 0 200 250" class="max-w-[300px] mx-auto">
-                    <defs>
-                        <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
-                            <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
-                            <feMerge>
-                                <feMergeNode in="coloredBlur"/>
-                                <feMergeNode in="SourceGraphic"/>
-                            </feMerge>
-                        </filter>
-                    </defs>
-                    <rect x="55" y="25" width="100" height="10" fill="#330000" />
-                    <rect x="55" y="25" width="10" height="210" fill="#330000" />
-                    <rect x="10" y="235" width="180" height="10" fill="#330000" />
-                    <rect x="50" y="20" width="100" height="10" fill="#cc0000" />
-                    <rect x="50" y="20" width="10" height="210" fill="#cc0000" />
-                    <rect x="5" y="230" width="180" height="10" fill="#cc0000" />
-                    <line x1="145" y1="25" x2="145" y2="50" stroke="#ffd700" stroke-width="3" />
+                    <line x1="20" y1="230" x2="180" y2="230" class="gallows-part" />
+                    <line x1="60" y1="230" x2="60" y2="20" class="gallows-part" />
+                    <line x1="60" y1="20" x2="140" y2="20" class="gallows-part" />
+                    <line x1="140" y1="20" x2="140" y2="50" stroke="#ffd700" stroke-width="3" />
                     <g id="hangman-figure">
-                        <line x1="90" y1="20" x2="50" y2="60" class="hangman-part gallows-part" /> <!-- Support potence -->
-                        <g class="hangman-part">
-                            <!-- Tête (Ange Exorciste) -->
-                            <circle cx="145" cy="70" r="25" fill="#ffd700" filter="url(#glow)" />
-                            <circle cx="145" cy="70" r="20" fill="#fce8f3" stroke="#ffd700" stroke-width="2" />
-                            <line x1="135" y1="60" x2="155" y2="80" stroke="#000000" stroke-width="3" />
-                            <line x1="155" y1="60" x2="135" y2="80" stroke="#000000" stroke-width="3" />
-                        </g>
-                        <line x1="145" y1="90" x2="145" y2="150" class="hangman-part" /> <!-- Corps -->
-                        <path d="M135 100 Q 100 100 110 70 Q 100 120 135 120 Z" class="hangman-part" stroke="#fff" fill="#fff"/>
-                        <path d="M155 100 Q 190 100 180 70 Q 190 120 155 120 Z" class="hangman-part" stroke="#fff" fill="#fff"/>
-                        <line x1="145" y1="100" x2="115" y2="130" class="hangman-part" /> <!-- Bras 1 -->
-                        <line x1="145" y1="100" x2="175" y2="130" class="hangman-part" /> <!-- Bras 2 -->
-                        <g class="hangman-part">
-                            <line x1="145" y1="150" x2="125" y2="190" />
-                            <line x1="145" y1="150" x2="165" y2="190" />
-                        </g>
+                        <circle cx="140" cy="75" r="20" class="hangman-part" /> <!-- Tête -->
+                        <line x1="140" y1="95" x2="140" y2="160" class="hangman-part" /> <!-- Corps -->
+                        <line x1="140" y1="110" x2="110" y2="140" class="hangman-part" /> <!-- Bras G -->
+                        <line x1="140" y1="110" x2="170" y2="140" class="hangman-part" /> <!-- Bras D -->
+                        <line x1="140" y1="160" x2="120" y2="200" class="hangman-part" /> <!-- Jambe G -->
+                        <line x1="140" y1="160" x2="160" y2="200" class="hangman-part" /> <!-- Jambe D -->
+                        <!-- Yeux morts -->
+                        <path d="M133 70 L137 74 M137 70 L133 74" class="hangman-part" stroke="red" />
+                        <path d="M143 70 L147 74 M147 70 L143 74" class="hangman-part" stroke="red" />
                     </g>
                 </svg>
-                <p class="text-lg text-red-400">Tentatives restantes: <span id="guesses-left" class="font-bold text-xl text-red-300">8</span></p>
-            
-                <div id="player-scores" class="mt-4">
-                    <h3 class="text-lg text-yellow-300 font-bold mb-2">Scores (Partie)</h3>
-                    <div id="scores-list" class="text-left max-w-xs mx-auto text-gray-300 bg-black bg-opacity-20 p-2 rounded">
-                    </div>
-                </div>
+                <p class="text-lg text-red-400">Vies: <span id="guesses-left" class="font-bold text-xl text-red-300">8</span></p>
+                <div id="scores-list" class="mt-2 text-sm text-left bg-black/40 p-2 rounded"></div>
             </div>
             
-            <div id="word-display" class="w-full md:w-2/3 flex flex-wrap justify-center items-center gap-2 md:gap-3 max-w-full">
-                <div class="text-2xl text-yellow-300">Chargement du mot...</div>
+            <!-- Mot -->
+            <div id="word-display" class="w-full md:w-2/3 flex flex-wrap justify-center items-center gap-2 md:gap-3 max-w-full min-h-[60px]">
+                <div class="text-2xl text-yellow-300">Chargement...</div>
             </div>
         </div>
 
-        <div id="keyboard" class="flex flex-wrap justify-center gap-1 md:gap-2 max-w-3xl mx-auto">
-        </div>
+        <!-- Clavier -->
+        <div id="keyboard" class="flex flex-wrap justify-center gap-1 md:gap-2 max-w-3xl mx-auto"></div>
         
-        <!-- Écran de fin de partie -->
-        <div id="game-status" class="game-status fixed inset-0 bg-black bg-opacity-90 flex flex-col justify-center items-center z-50 hidden">
-            <!-- Placeholder image pour Alastor (remplace le fichier local) -->
-            <div id="lose-image" class="demon-image hidden text-6xl">😈</div>
-            
+        <!-- Fin de partie -->
+        <div id="game-status" class="game-status fixed inset-0 bg-black bg-opacity-95 flex flex-col justify-center items-center z-50 hidden">
+            <img id="lose-image" src="./image/Alastor-Demon.png" alt="Alastor" class="demon-image hidden" onerror="this.style.display='none'">
             <h2 id="status-message" class="text-4xl font-bold mb-4"></h2>
             <p id="correct-word" class="text-2xl text-gray-400 mb-8 whitespace-pre-line"></p>
-            
-            <div class="mb-6 w-full max-w-xs">
-                <h3 class="text-lg text-yellow-300 font-bold mb-2">Scores Finaux</h3>
-                <div id="final-scores-list" class="text-left max-w-xs mx-auto text-gray-300 bg-black bg-opacity-20 p-2 rounded">
-                </div>
-            </div>
-
             <div class="flex gap-4">
-                <button id="replay-game-button" class="replay-button text-xl py-3 px-8 rounded-lg">
-                    Recommencer
-                </button>
-                <button id="lobby-return-button" class="replay-button text-xl py-3 px-8 rounded-lg">
-                    Retour au Lobby 
-                </button>
+                <button id="replay-game-button" class="replay-button text-xl py-3 px-8 rounded-lg hidden">Rejouer</button>
+                <button id="lobby-return-button" class="replay-button text-xl py-3 px-8 rounded-lg">Quitter</button>
             </div>
         </div>
-        
     </div>
 
-    <!-- Modal de sélection de catégorie -->
+    <!-- Modal Catégorie -->
     <div id="category-selection-modal" class="modal-container fixed inset-0 bg-black bg-opacity-90 flex flex-col justify-center items-center z-50 hidden p-4">
         <div class="w-full max-w-md mx-auto p-6 rounded-lg text-center">
-            <h2 class="title-font text-4xl mb-6">Choisissez une catégorie</h2>
-            <div id="category-list-container" class="w-full">
-                <!-- Les catégories seront injectées ici -->
-            </div>
-            <button id="category-modal-cancel-btn" class="replay-button modal-cancel-button text-xl py-3 px-8 rounded-lg mt-6 w-full">
-                Annuler
-            </button>
+            <h2 class="title-font text-3xl mb-6">Catégorie</h2>
+            <div id="category-list-container" class="w-full space-y-2"></div>
+            <button id="category-modal-cancel-btn" class="replay-button bg-gray-600 text-white mt-6 w-full py-2 rounded">Annuler</button>
         </div>
     </div>
 
-    <!-- SCRIPT FIREBASE V11 ADAPTÉ À VOTRE LOGIQUE -->
+    <!-- SCRIPT (Module ES6 compatible navigateur) -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signOut, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp, runTransaction, increment, query, limit, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        // 1. Imports depuis le CDN (Fonctionne partout)
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp, runTransaction, increment, query, limit, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // --- CONFIGURATION ---
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        // 2. VOTRE CONFIGURATION FIREBASE REELLE
+        const firebaseConfig = {
+          apiKey: "AIzaSyA1-S9RlPXs4nYd-NY4BXdam2g9jUxR7LI",
+          authDomain: "pendu-hazbin.firebaseapp.com",
+          projectId: "pendu-hazbin",
+          storageBucket: "pendu-hazbin.firebasestorage.app",
+          messagingSenderId: "1036994393348",
+          appId: "1:1036994393348:web:00eb92fa640eaa0a160c51",
+          measurementId: "G-484X5XH86E"
+        };
+
+        // Initialisation
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // Chemins sécurisés obligatoires pour cet environnement
-        const PATH_ROOT = `artifacts/${appId}/public/data`;
-        const PATH_USERS = `${PATH_ROOT}/users`;
-        const PATH_GAMES = `${PATH_ROOT}/games`;
-        const PATH_LOBBY = `${PATH_ROOT}/lobby`;
-        
-        // --- VOS DONNÉES ---
-        const MAX_GUESSES = 8;
-        
+        // --- DONNEES COMPLÈTES (RÉINTÉGRÉES) ---
         const SHIP_DATA_RAW = [
-          { ship: "Charlastor", personnages: ["Charlie", "Alastor"] }, { ship: "Chaggie", personnages: ["Charlie", "Vaggie"] },
-          { ship: "RadioHusk", personnages: ["Alastor", "Husk"] }, { ship: "RadioDust", personnages: ["Alastor", "Angel Dust"] },
-          { ship: "StaticDust", personnages: ["Vox", "Angel Dust"] }, { ship: "RadioStatic", personnages: ["Alastor", "Vox"] },
-          { ship: "ValDust", personnages: ["Valentino", "Angel Dust"] }, { ship: "Shaggie", personnages: ["Alastor", "Vaggie"] },
-          { ship: "HuskDust", personnages: ["Husk", "Angel Dust"] }, { ship: "Huskerdust", personnages: ["Husk", "Angel Dust"] },
-          { ship: "Rosalastor", personnages: ["Rosie", "Alastor"] }, { ship: "PentCherry", personnages: ["Sir Pentious", "Cherri Bomb"] },
-          { ship: "CherriBombious", personnages: ["Cherri Bomb", "Sir Pentious"] }, { ship: "VelVox", personnages: ["Velvette", "Vox"] },
-          { ship: "VelVee", personnages: ["Velvette", "Valentino"] }, { ship: "ValVee", personnages: ["Valentino", "Velvette"] },
-          { ship: "VeesTrio", personnages: ["Vox", "Velvette", "Valentino"] }, { ship: "DustyMay", personnages: ["Angel Dust", "Velvette"] },
-          { ship: "Alastora", personnages: ["Alastor", "Niffty"] }, { ship: "Aracknie", personnages: ["Angel Dust", "Niffty"] },
-          { ship: "Mimst", personnages: ["Mimzy", "Husk"] }, { ship: "RustyLake", personnages: ["Mimzy", "Angel Dust"] },
-          { ship: "Velvetteen", personnages: ["Velvette", "Angel Dust"] }, { ship: "BombHound", personnages: ["Cherri Bomb", "Husk"] },
-          { ship: "MimCherry", personnages: ["Mimzy", "Cherri Bomb"] }, { ship: "AngelMay", personnages: ["Angel Dust", "Velvette"] },
-          { ship: "Hazzy", personnages: ["Charlie", "Husk"] }, { ship: "PentHusk", personnages: ["Sir Pentious", "Husk"] },
-          { ship: "VaggDust", personnages: ["Vaggie", "Angel Dust"] }, { ship: "CharlieDust", personnages: ["Charlie", "Angel Dust"] },
-          { ship: "DustBomb", personnages: ["Angel Dust", "Cherri Bomb"] }, { ship: "Bombstar", personnages: ["Charlie", "Cherri Bomb"] },
-          { ship: "MayMay", personnages: ["Mimzy", "Velvette"] }, { ship: "SilkRazor", personnages: ["Rosie", "Velvette"] },
-          { ship: "Mimvee", personnages: ["Velvette", "Mimzy"] }, { ship: "DustStora", personnages: ["Angel Dust", "Alastor"] },
-          { ship: "Pentastor", personnages: ["Sir Pentious", "Alastor"] }, { ship: "OverlordsShip", personnages: ["Rosie", "Vox"] },
-          { ship: "VelvetStora", personnages: ["Velvette", "Alastor"] }, { ship: "StoraBomb", personnages: ["Alastor", "Cherri Bomb"] },
-          { ship: "SirDust", personnages: ["Sir Pentious", "Angel Dust"] }, { ship: "CherriVee", personnages: ["Cherri Bomb", "Velvette"] },
-          { ship: "Lucilith", personnages: ["Lucifer", "Lilith"] }, { ship: "Lucilaggie", personnages: ["Lucifer", "Vaggie"] },
-          { ship: "CharlieStar", personnages: ["Charlie", "Lucifer"] }, { ship: "Lucistora", personnages: ["Lucifer", "Alastor"] },
-          { ship: "Lucivox", personnages: ["Lucifer", "Vox"] }, { ship: "Lucivette", personnages: ["Lucifer", "Velvette"] },
-          { ship: "Lucival", personnages: ["Lucifer", "Valentino"] }, { ship: "Lucistatic", personnages: ["Lucifer", "Vox"] },
-          { ship: "Lucimoon", personnages: ["Lucifer", "Angel Dust"] }, { ship: "Lustifer", personnages: ["Lucifer", "Rosie"] },
-          { ship: "Luciflow", personnages: ["Lucifer", "Niffty"] }, { ship: "Lucibomb", personnages: ["Lucifer", "Cherri Bomb"] },
+          { ship: "Charlastor", personnages: ["Charlie", "Alastor"] },
+          { ship: "Chaggie", personnages: ["Charlie", "Vaggie"] },
+          { ship: "RadioHusk", personnages: ["Alastor", "Husk"] },
+          { ship: "RadioDust", personnages: ["Alastor", "Angel Dust"] },
+          { ship: "StaticDust", personnages: ["Vox", "Angel Dust"] },
+          { ship: "RadioStatic", personnages: ["Alastor", "Vox"] },
+          { ship: "ValDust", personnages: ["Valentino", "Angel Dust"] },
+          { ship: "Shaggie", personnages: ["Alastor", "Vaggie"] },
+          { ship: "HuskDust", personnages: ["Husk", "Angel Dust"] },
+          { ship: "Huskerdust", personnages: ["Husk", "Angel Dust"] },
+          { ship: "Rosalastor", personnages: ["Rosie", "Alastor"] },
+          { ship: "PentCherry", personnages: ["Sir Pentious", "Cherri Bomb"] },
+          { ship: "CherriBombious", personnages: ["Cherri Bomb", "Sir Pentious"] },
+          { ship: "VelVox", personnages: ["Velvette", "Vox"] },
+          { ship: "VelVee", personnages: ["Velvette", "Valentino"] },
+          { ship: "ValVee", personnages: ["Valentino", "Velvette"] },
+          { ship: "VeesTrio", personnages: ["Vox", "Velvette", "Valentino"] },
+          { ship: "DustyMay", personnages: ["Angel Dust", "Velvette"] },
+          { ship: "Alastora", personnages: ["Alastor", "Niffty"] },
+          { ship: "Aracknie", personnages: ["Angel Dust", "Niffty"] },
+          { ship: "Mimst", personnages: ["Mimzy", "Husk"] },
+          { ship: "RustyLake", personnages: ["Mimzy", "Angel Dust"] },
+          { ship: "Velvetteen", personnages: ["Velvette", "Angel Dust"] },
+          { ship: "BombHound", personnages: ["Cherri Bomb", "Husk"] },
+          { ship: "MimCherry", personnages: ["Mimzy", "Cherri Bomb"] },
+          { ship: "AngelMay", personnages: ["Angel Dust", "Velvette"] },
+          { ship: "Hazzy", personnages: ["Charlie", "Husk"] },
+          { ship: "PentHusk", personnages: ["Sir Pentious", "Husk"] },
+          { ship: "VaggDust", personnages: ["Vaggie", "Angel Dust"] },
+          { ship: "CharlieDust", personnages: ["Charlie", "Angel Dust"] },
+          { ship: "DustBomb", personnages: ["Angel Dust", "Cherri Bomb"] },
+          { ship: "Bombstar", personnages: ["Charlie", "Cherri Bomb"] },
+          { ship: "MayMay", personnages: ["Mimzy", "Velvette"] },
+          { ship: "SilkRazor", personnages: ["Rosie", "Velvette"] },
+          { ship: "Mimvee", personnages: ["Velvette", "Mimzy"] },
+          { ship: "DustStora", personnages: ["Angel Dust", "Alastor"] },
+          { ship: "Pentastor", personnages: ["Sir Pentious", "Alastor"] },
+          { ship: "OverlordsShip", personnages: ["Rosie", "Vox"] },
+          { ship: "VelvetStora", personnages: ["Velvette", "Alastor"] },
+          { ship: "StoraBomb", personnages: ["Alastor", "Cherri Bomb"] },
+          { ship: "SirDust", personnages: ["Sir Pentious", "Angel Dust"] },
+          { ship: "CherriVee", personnages: ["Cherri Bomb", "Velvette"] },
+          { ship: "Lucilith", personnages: ["Lucifer", "Lilith"] },
+          { ship: "Lucilaggie", personnages: ["Lucifer", "Vaggie"] },
+          { ship: "CharlieStar", personnages: ["Charlie", "Lucifer"] },
+          { ship: "Lucistora", personnages: ["Lucifer", "Alastor"] },
+          { ship: "Lucivox", personnages: ["Lucifer", "Vox"] },
+          { ship: "Lucivette", personnages: ["Lucifer", "Velvette"] },
+          { ship: "Lucival", personnages: ["Lucifer", "Valentino"] },
+          { ship: "Lucistatic", personnages: ["Lucifer", "Vox"] },
+          { ship: "Lucimoon", personnages: ["Lucifer", "Angel Dust"] },
+          { ship: "Lustifer", personnages: ["Lucifer", "Rosie"] },
+          { ship: "Luciflow", personnages: ["Lucifer", "Niffty"] },
+          { ship: "Lucibomb", personnages: ["Lucifer", "Cherri Bomb"] },
           { ship: "Lucistious", personnages: ["Lucifer", "Sir Pentious"] }
         ];
 
         const WORD_CATEGORIES = {
-            "Personnage": ["ADAM", "ALASTOR", "ANGEL DUST", "ASMODEUS", "BEELZEBUB", "CARMILLA CARMINE", "CHARLIE MORNINGSTAR", "CHERRI BOMB", "EMILY", "HUSK", "LILITH MORNINGSTAR", "LUCIFER MORNINGSTAR", "LUTE", "MAMMON", "MIMZY", "NIFFTY", "ROSIE", "SAINT PIERRE", "SATAN", "SERA", "SIR PENTIOUS", "STOLAS", "VALENTINO", "VAGGIE", "VELVETTE", "VOX", "ZESTIAL", "ABEL", "BAXTER", "DAZZLE", "FAT NUGGETS", "KATIE KILLJOY", "KEEKEE", "RAZZLE", "SUSAN", "TOM TRENCH", "TRAVIS", "ZEEZI", "AGENT ONE", "AGENT TWO", "BLITZO", "FIZZAROLLI", "LOONA", "MARTHA", "MILLIE", "MOXXIE", "OCTAVIA", "RALPHIE", "STRIKER", "LEVIATHAN", "EGG BOIZ", "ANDREALPHUS", "SALLIE MAY", "WALLY WACKFORD"],
-            "Lieu & Faction": ["CERCLE DE L ORGUEIL", "CANNIBAL TOWN", "ENFER", "HAZBIN HOTEL", "HELLAVERSE", "PARADIS", "HEAVEN", "PENTAGRAM CITY", "V TOWER", "LES VEES", "VOXTEK", "IMP", "CERCLE DE LA COLERE", "CERCLE DE L AVARICE", "CERCLE DE LA PARESSE", "CERCLE DE LA GOURMANDISE", "CERCLE DE LA LUXURE", "CERCLE DE L ENVIE", "PURGATOIRE", "CERCLE DES PECHES", "MAFIA", "LOO LOO LAND"],
-            "Espèce & Rang & Objets": ["ARCHANGE", "GOETIA", "CHERUBINS", "EXORCISTES", "WINNERS", "HELLBORN", "HELLHOUNDS", "IMPS", "OVERLORDS", "PECHEURS", "SINNERS", "SERAPHINS", "DOMINATIONS", "PUISSANCES", "TRONE", "VERTUS", "SUCCUBES", "DEMON DECHU", "PACTE", "CONTRAT", "GRIMOIRE", "AME", "DAMNES", "PECHE", "ANGE", "DEMON", "PORTAIL", "GUERRE", "BARRIERE MAGIQUE", "ARS GOETIA", "PRINCE DEMON", "ROI DE L ENFER", "REINE DE L ENFER", "ARME ANGELIQUE", "LANCE ANGELIQUE", "AUREOLE"],
-            "Musique (EN)": ["HAPPY DAY IN HELL", "HELL IS FOREVER", "STAYED GONE", "IT STARTS WITH SORRY", "RESPECTLESS", "WHATEVER IT TAKES", "POISON", "LOSER, BABY", "HELLS GREATEST DAD", "MORE THAN ANYTHING", "WELCOME TO HEAVEN", "OUT FOR LOVE", "TRUST US", "LIKE YOU", "SERA CONFESSION", "GRAVITY", "PISS", "SPEEDRUN TO REDEMPTION", "DONT YOU FORGET", "CLEAN IT UP", "BAD WITH US", "VOX POPULI", "VOX DEI", "LOVE IN A BOTTLE", "LOSIN STREAK", "EASY"],
-            "Musique (FR)": ["UN JOYEUX JOUR EN ENFER", "L ENFER EST ETERNEL", "DEMANDEZ PARDON", "IRRESPECTUEUX", "POISON", "LE MEILLEUR PERE DE L ENFER", "PLUS QUE TOUT", "BIENVENUE AU PARADIS", "FAIS NOUS CONFIANCE", "UNE FOIS QU ON SERA LA HAUT", "LA CONFESSION DE SERA", "GRAVITY", "PISS", "SPEEDRUN VERS LA REDEMPTION", "N OUBLIE PAS", "VOX POPULI", "VOX DEI", "L AMOUR EN BOUTEILLE", "FACILE"],
+            "Personnage": [
+                "ADAM", "ALASTOR", "ANGEL DUST", "ASMODEUS", "BEELZEBUB", "CARMILLA CARMINE", 
+                "CHARLIE MORNINGSTAR", "CHERRI BOMB", "EMILY", "HUSK", "LILITH MORNINGSTAR", 
+                "LUCIFER MORNINGSTAR", "LUTE", "MAMMON", "MIMZY", "NIFFTY", "ROSIE", 
+                "SAINT PIERRE", "SATAN", "SERA", "SIR PENTIOUS", "STOLAS", "VALENTINO", 
+                "VAGGIE", "VELVETTE", "VOX", "ZESTIAL",
+                "ABEL", "BAXTER", "DAZZLE", "FAT NUGGETS", "KATIE KILLJOY", "KEEKEE", 
+                "RAZZLE", "SUSAN", "TOM TRENCH", "TRAVIS", "ZEEZI", 
+                "AGENT ONE", "AGENT TWO", "BLITZO", "FIZZAROLLI", "LOONA", "MARTHA", 
+                "MILLIE", "MOXXIE", "OCTAVIA", "RALPHIE", "STRIKER", "LEVIATHAN",
+                "EGG BOIZ", "ANDREALPHUS", "SALLIE MAY", "WALLY WACKFORD"
+            ],
+            "Lieu & Faction": [
+                "CERCLE DE L ORGUEIL", "CANNIBAL TOWN", "ENFER", "HAZBIN HOTEL", "HELLAVERSE", 
+                "PARADIS", "HEAVEN", "PENTAGRAM CITY", "V TOWER", "LES VEES", "VOXTEK",
+                "IMP", "CERCLE DE LA COLERE", "CERCLE DE L AVARICE", "CERCLE DE LA PARESSE",
+                "CERCLE DE LA GOURMANDISE", "CERCLE DE LA LUXURE", "CERCLE DE L ENVIE",
+                "PURGATOIRE", "CERCLE DES PECHES",
+                "MAFIA", "LOO LOO LAND"
+            ],
+            "Espèce & Rang & Objets": [
+                "ARCHANGE", "GOETIA", "CHERUBINS", "EXORCISTES", "WINNERS", "HELLBORN", 
+                "HELLHOUNDS", "IMPS", "OVERLORDS", "PECHEURS", "SINNERS", "SERAPHINS",
+                "DOMINATIONS", "PUISSANCES", "TRONE", "VERTUS", "SUCCUBES", "DEMON DECHU",
+                "PACTE", "CONTRAT", "GRIMOIRE", "AME", "DAMNES", "PECHE",
+                "ANGE", "DEMON", "PORTAIL", "GUERRE", "BARRIERE MAGIQUE",
+                "ARS GOETIA", "PRINCE DEMON", "ROI DE L ENFER", "REINE DE L ENFER",
+                "ARME ANGELIQUE", "LANCE ANGELIQUE", "AUREOLE"
+            ],
+            "Musique (EN)": [
+                "HAPPY DAY IN HELL", "HELL IS FOREVER", "STAYED GONE", "IT STARTS WITH SORRY",
+                "RESPECTLESS", "WHATEVER IT TAKES", "POISON", "LOSER, BABY", "HELLS GREATEST DAD",
+                "MORE THAN ANYTHING", "WELCOME TO HEAVEN", "OUT FOR LOVE", "TRUST US", "LIKE YOU",
+                "SERA CONFESSION", "GRAVITY", "PISS", "SPEEDRUN TO REDEMPTION", "DONT YOU FORGET",
+                "CLEAN IT UP", "BAD WITH US", "VOX POPULI", "VOX DEI", "LOVE IN A BOTTLE",
+                "LOSIN STREAK", "EASY"
+            ],
+            "Musique (FR)": [
+                "UN JOYEUX JOUR EN ENFER", "L ENFER EST ETERNEL", "DEMANDEZ PARDON", "IRRESPECTUEUX",
+                "POISON", "LE MEILLEUR PERE DE L ENFER", "PLUS QUE TOUT", "BIENVENUE AU PARADIS",
+                "FAIS NOUS CONFIANCE", "UNE FOIS QU ON SERA LA HAUT", "LA CONFESSION DE SERA",
+                "GRAVITY", "PISS", "SPEEDRUN VERS LA REDEMPTION", "N OUBLIE PAS", "VOX POPULI",
+                "VOX DEI", "L AMOUR EN BOUTEILLE", "FACILE"
+            ],
             "Ships (Couples)": SHIP_DATA_RAW.map(item => item.ship.toUpperCase())
         };
         
-        // --- DOM REFERENCES ---
+        const MAX_GUESSES = 8;
+
+        // --- DOM ---
         const DOM = {
-            authContainer: document.getElementById('auth-container'),
+            auth: document.getElementById('auth-container'),
+            lobby: document.getElementById('lobby-container'),
+            game: document.getElementById('game-container'),
             authPseudo: document.getElementById('auth-pseudo'),
-            authPassword: document.getElementById('auth-password'),
-            authLoginBtn: document.getElementById('auth-login-btn'),
-            authRegisterBtn: document.getElementById('auth-register-btn'),
-            authError: document.getElementById('auth-error'),
-            loadingMsg: document.getElementById('loading-msg'),
-            lobbyContainer: document.getElementById('lobby-container'),
-            lobbyUsername: document.getElementById('lobby-username'), 
-            logoutBtn: document.getElementById('logout-btn'),       
-            createGameFacileBtn: document.getElementById('create-game-facile-btn'),
-            createGameDifficileBtn: document.getElementById('create-game-difficile-btn'),
-            activeGamesList: document.getElementById('active-games-list'),
-            leaderboardList: document.getElementById('leaderboard-list'), 
-            noGamesMessage: document.getElementById('no-games-message'),
-            lobbyError: document.getElementById('lobby-error'),
-            gameContainer: document.getElementById('game-container'),
-            leaveGameBtn: document.getElementById('leave-game-btn'),
-            categoryP: document.getElementById('category-p'),
-            categoryDisplay: document.getElementById('word-category'),
-            turnIndicator: document.getElementById('turn-indicator'),
-            guessesLeftSpan: document.getElementById('guesses-left'),
-            hangmanParts: document.querySelectorAll('.hangman-part'),
-            wordDisplay: document.getElementById('word-display'),
-            keyboard: document.getElementById('keyboard'),
-            scoresList: document.getElementById('scores-list'), 
-            gameStatus: document.getElementById('game-status'),
-            statusMessage: document.getElementById('status-message'),
-            correctWordDisplay: document.getElementById('correct-word'),
-            finalScoresList: document.getElementById('final-scores-list'), 
-            replayGameButton: document.getElementById('replay-game-button'),
-            lobbyReturnButton: document.getElementById('lobby-return-button'),
-            loseImage: document.getElementById('lose-image'),
-            categoryModal: document.getElementById('category-selection-modal'),
-            categoryListContainer: document.getElementById('category-list-container'),
-            categoryModalCancelBtn: document.getElementById('category-modal-cancel-btn')
+            authPass: document.getElementById('auth-password'),
+            authErr: document.getElementById('auth-error'),
+            loader: document.getElementById('loading-msg'),
+            btns: {
+                login: document.getElementById('auth-login-btn'),
+                register: document.getElementById('auth-register-btn'),
+                logout: document.getElementById('logout-btn'),
+                easy: document.getElementById('create-game-facile-btn'),
+                hard: document.getElementById('create-game-difficile-btn'),
+                leave: document.getElementById('leave-game-btn'),
+                backLobby: document.getElementById('lobby-return-button'),
+                replay: document.getElementById('replay-game-button'),
+                cancelCat: document.getElementById('category-modal-cancel-btn')
+            },
+            displays: {
+                user: document.getElementById('lobby-username'),
+                games: document.getElementById('active-games-list'),
+                leaders: document.getElementById('leaderboard-list'),
+                word: document.getElementById('word-display'),
+                keyboard: document.getElementById('keyboard'),
+                hangman: document.querySelectorAll('.hangman-part'),
+                guesses: document.getElementById('guesses-left'),
+                turn: document.getElementById('turn-indicator'),
+                cat: document.getElementById('word-category'),
+                status: document.getElementById('game-status'),
+                msg: document.getElementById('status-message'),
+                res: document.getElementById('correct-word'),
+                img: document.getElementById('lose-image')
+            },
+            modal: document.getElementById('category-selection-modal'),
+            catList: document.getElementById('category-list-container')
         };
 
-        // L'ID utilisateur pour le JEU (pas pour Firebase Auth)
-        let currentPlayerPseudoID = null; 
-        let currentDisplayPseudo = null;
+        let myPseudoID = null;
+        let myPseudoName = null;
         let currentGameId = null;
-        let unsubscribeGameListener = null;
-        let unsubscribeLobbyListener = null;
-        let unsubscribeLeaderboardListener = null;
+        let unsubGame = null;
 
-        // --- LOGIQUE D'AUTHENTIFICATION PERSONNALISÉE ---
-        // On utilise signInAnonymously UNIQUEMENT pour avoir accès à la base de données.
-        // La vraie logique "Pseudo/Pass" est gérée manuellement via Firestore.
-
+        // --- AUTHENTIFICATION ---
+        // On se connecte anonymement à Firebase juste pour avoir le droit de lire/écrire la DB.
+        // La vraie "sécurité" pseudo/mdp est gérée par notre logique Firestore.
         async function initNetwork() {
-             try {
-                 // 1. Tente connexion avec token si dispo
-                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                     await signInWithCustomToken(auth, __initial_auth_token);
-                 } else {
-                     await signInAnonymously(auth);
-                 }
-                 
-                 DOM.authContainer.classList.remove('hidden');
-                 // Si on avait déjà une session "pseudo" locale (optionnel, pour l'instant on demande login à chaque F5)
-                 
-             } catch(e) {
-                 console.error("Erreur réseau:", e);
-                 DOM.authError.textContent = "Erreur de connexion au serveur (Firebase).";
-             }
-        }
-
-        // Transforme "Angel Dust" en "angeldust" pour l'ID unique
-        function sanitizePseudo(pseudo) {
-            return pseudo.toLowerCase().trim().replace(/[^a-z0-9]/g, '');
-        }
-
-        async function handleRegister() {
-            const pseudoInput = DOM.authPseudo.value.trim();
-            const passwordInput = DOM.authPassword.value;
-
-            if (pseudoInput.length < 3) { DOM.authError.textContent = "Pseudo trop court (min 3)."; return; }
-            if (passwordInput.length < 4) { DOM.authError.textContent = "Mot de passe trop court (min 4)."; return; }
-
-            const pseudoID = sanitizePseudo(pseudoInput);
-            setLoading(true);
-
             try {
-                // Vérifie si le pseudo existe déjà
-                const docRef = doc(db, PATH_USERS, pseudoID);
-                const docSnap = await getDoc(docRef);
-
-                if (docSnap.exists()) {
-                    DOM.authError.textContent = "Ce pseudo est déjà pris par un autre démon !";
-                } else {
-                    // Crée le compte
-                    await setDoc(docRef, {
-                        username: pseudoInput, // Le nom affiché (avec majuscules/espaces)
-                        password: passwordInput, // (En clair pour cette démo sans backend)
-                        totalScore: 0,
-                        createdAt: serverTimestamp()
-                    });
-                    loginSuccess(pseudoID, pseudoInput);
-                }
+                DOM.loader.classList.remove('hidden');
+                await signInAnonymously(auth);
+                DOM.loader.classList.add('hidden');
             } catch (e) {
                 console.error(e);
-                DOM.authError.textContent = "Erreur inscription: " + e.message;
-            } finally {
-                setLoading(false);
+                DOM.authErr.textContent = "Erreur connexion serveur (vérifiez votre internet).";
             }
         }
 
-        async function handleLogin() {
-            const pseudoInput = DOM.authPseudo.value.trim();
-            const passwordInput = DOM.authPassword.value;
+        function sanitize(str) { return str.toLowerCase().trim().replace(/[^a-z0-9]/g, ''); }
 
-            if (!pseudoInput || !passwordInput) { DOM.authError.textContent = "Remplissez les champs."; return; }
-
-            const pseudoID = sanitizePseudo(pseudoInput);
-            setLoading(true);
-
+        async function register() {
+            const pseudo = DOM.authPseudo.value.trim();
+            const pass = DOM.authPass.value;
+            if(pseudo.length < 3 || pass.length < 4) { DOM.authErr.textContent = "Pseudo (3+) ou MDP (4+) trop court."; return; }
+            
+            const id = sanitize(pseudo);
+            DOM.authErr.textContent = "Inscription...";
+            
             try {
-                const docRef = doc(db, PATH_USERS, pseudoID);
-                const docSnap = await getDoc(docRef);
-
-                if (!docSnap.exists()) {
-                    DOM.authError.textContent = "Ce pseudo n'existe pas.";
+                const ref = doc(db, "users", id);
+                const snap = await getDoc(ref);
+                if(snap.exists()) {
+                    DOM.authErr.textContent = "Ce pseudo est déjà pris !";
                 } else {
-                    const data = docSnap.data();
-                    if (data.password === passwordInput) {
-                        loginSuccess(pseudoID, data.username);
+                    await setDoc(ref, {
+                        username: pseudo,
+                        password: pass, // En clair ici (simple jeu)
+                        score: 0
+                    });
+                    loginSuccess(id, pseudo);
+                }
+            } catch(e) { DOM.authErr.textContent = "Erreur DB: " + e.message; }
+        }
+
+        async function login() {
+            const pseudo = DOM.authPseudo.value.trim();
+            const pass = DOM.authPass.value;
+            if(!pseudo || !pass) return;
+            
+            const id = sanitize(pseudo);
+            DOM.authErr.textContent = "Connexion...";
+            
+            try {
+                const snap = await getDoc(doc(db, "users", id));
+                if(!snap.exists()) {
+                    DOM.authErr.textContent = "Compte introuvable.";
+                } else {
+                    if(snap.data().password === pass) {
+                        loginSuccess(id, snap.data().username);
                     } else {
-                        DOM.authError.textContent = "Mauvais mot de passe !";
+                        DOM.authErr.textContent = "Mauvais mot de passe.";
                     }
                 }
-            } catch (e) {
-                console.error(e);
-                DOM.authError.textContent = "Erreur connexion: " + e.message;
-            } finally {
-                setLoading(false);
-            }
+            } catch(e) { DOM.authErr.textContent = "Erreur DB: " + e.message; }
         }
 
-        function loginSuccess(id, displayName) {
-            currentPlayerPseudoID = id;
-            currentDisplayPseudo = displayName;
-            showLobby();
-        }
-
-        function setLoading(isLoading) {
-            DOM.authLoginBtn.disabled = isLoading;
-            DOM.authRegisterBtn.disabled = isLoading;
-            DOM.loadingMsg.classList.toggle('hidden', !isLoading);
-            DOM.authError.textContent = "";
-        }
-
-        // --- NAVIGATION ---
-        function showAuth() {
-            DOM.authContainer.classList.remove('hidden');
-            DOM.lobbyContainer.classList.add('hidden');
-            DOM.gameContainer.classList.add('hidden');
-            DOM.authPseudo.value = "";
-            DOM.authPassword.value = "";
-            DOM.authError.textContent = "";
-            currentPlayerPseudoID = null;
-        }
-
-        function showLobby() {
-            DOM.authContainer.classList.add('hidden');
-            DOM.lobbyContainer.classList.remove('hidden');
-            DOM.gameContainer.classList.add('hidden');
-            DOM.gameStatus.classList.add('hidden');
-            DOM.lobbyUsername.textContent = currentDisplayPseudo;
-            
-            listenToLobby();
-            listenToLeaderboard();
+        function loginSuccess(id, name) {
+            myPseudoID = id;
+            myPseudoName = name;
+            DOM.auth.classList.add('hidden');
+            DOM.lobby.classList.remove('hidden');
+            DOM.displays.user.textContent = name;
+            startLobbyListeners();
         }
 
         // --- LOBBY ---
-        function listenToLobby() {
-            if (unsubscribeLobbyListener) unsubscribeLobbyListener();
-            unsubscribeLobbyListener = onSnapshot(collection(db, PATH_LOBBY), (snapshot) => {
-                DOM.activeGamesList.innerHTML = '';
-                if (snapshot.empty) {
-                    DOM.activeGamesList.appendChild(DOM.noGamesMessage.cloneNode(true));
-                } else {
-                    snapshot.forEach((docSnap) => {
-                        const game = docSnap.data();
-                        const item = document.createElement('div');
-                        item.classList.add('lobby-game-item');
-                        const text = document.createElement('span');
-                        const difficultyText = game.difficulty === 'facile' ? 'Facile' : 'Difficile';
-                        text.textContent = `${game.hostName} (${difficultyText})`;
-                        item.appendChild(text);
-                        const buttonContainer = document.createElement('div');
-                        const joinBtn = document.createElement('button');
-                        joinBtn.textContent = "Rejoindre";
-                        
-                        // Vérifie si c'est MA partie (en comparant l'ID Pseudo)
-                        if (game.hostId === currentPlayerPseudoID) {
-                            joinBtn.disabled = true;
-                            joinBtn.textContent = "Votre partie";
-                            const deleteBtn = document.createElement('button');
-                            deleteBtn.textContent = "Supprimer";
-                            deleteBtn.classList.add('delete-button');
-                            deleteBtn.onclick = (e) => { e.stopPropagation(); deleteGameFromLobby(docSnap.id); };
-                            buttonContainer.appendChild(joinBtn);
-                            buttonContainer.appendChild(deleteBtn);
-                        } else {
-                            joinBtn.onclick = () => joinGame(docSnap.id);
-                            buttonContainer.appendChild(joinBtn);
-                        }
-                        item.appendChild(buttonContainer);
-                        DOM.activeGamesList.appendChild(item);
-                    });
+        function startLobbyListeners() {
+            // Liste des jeux
+            onSnapshot(collection(db, "lobby"), (snap) => {
+                DOM.displays.games.innerHTML = '';
+                if(snap.empty) {
+                    DOM.displays.games.innerHTML = '<p class="text-gray-500 p-2">Aucune partie.</p>';
+                    return;
                 }
+                snap.forEach(d => {
+                    const g = d.data();
+                    const div = document.createElement('div');
+                    div.className = "flex justify-between items-center p-2 border-b border-gray-700";
+                    
+                    const btn = document.createElement('button');
+                    btn.className = "bg-red-800 text-white px-3 py-1 rounded text-sm hover:bg-red-600";
+                    
+                    if(g.hostId === myPseudoID) {
+                        btn.textContent = "Supprimer";
+                        btn.onclick = () => deleteGame(d.id);
+                    } else {
+                        btn.textContent = "Rejoindre";
+                        btn.onclick = () => joinGame(d.id);
+                    }
+                    
+                    div.innerHTML = `<span>${g.hostName} (${g.difficulty})</span>`;
+                    div.appendChild(btn);
+                    DOM.displays.games.appendChild(div);
+                });
             });
-        }
 
-        function listenToLeaderboard() {
-            if (unsubscribeLeaderboardListener) unsubscribeLeaderboardListener();
-            // Limitation : tri simple côté client car index pas garanti
-            unsubscribeLeaderboardListener = onSnapshot(query(collection(db, PATH_USERS), limit(50)), (snapshot) => {
-                let users = [];
-                snapshot.forEach(doc => users.push(doc.data()));
-                users.sort((a, b) => (b.totalScore || 0) - (a.totalScore || 0));
-
-                DOM.leaderboardList.innerHTML = '';
-                if(users.length === 0) DOM.leaderboardList.innerHTML = '<p class="text-gray-500">Vide...</p>';
+            // Classement
+            const q = query(collection(db, "users"), limit(20));
+            onSnapshot(q, (snap) => {
+                const users = [];
+                snap.forEach(d => users.push(d.data()));
+                users.sort((a,b) => (b.score||0) - (a.score||0));
                 
-                users.slice(0, 10).forEach((user, index) => {
-                    const item = document.createElement('div');
-                    item.classList.add('leaderboard-item');
-                    const rank = index + 1;
-                    let rankClass = "bg-gray-700";
-                    if(rank === 1) rankClass = "rank-1";
-                    else if(rank === 2) rankClass = "rank-2";
-                    else if(rank === 3) rankClass = "rank-3";
-
-                    item.innerHTML = `
-                        <div class="flex items-center">
-                            <span class="rank-badge ${rankClass}">${rank}</span>
-                            <span class="text-white font-bold truncate max-w-[150px]">${user.username}</span>
-                        </div>
-                        <span class="text-yellow-400 font-bold">${user.totalScore || 0} pts</span>
-                    `;
-                    DOM.leaderboardList.appendChild(item);
+                DOM.displays.leaders.innerHTML = '';
+                users.slice(0,10).forEach((u, i) => {
+                   const div = document.createElement('div');
+                   div.className = "flex justify-between text-sm p-1";
+                   div.innerHTML = `<span>${i+1}. ${u.username}</span><span class="text-yellow-500">${u.score||0}</span>`;
+                   DOM.displays.leaders.appendChild(div);
                 });
             });
         }
 
-        async function deleteGameFromLobby(gameId) {
-            if (!gameId) return;
-            try {
-                await deleteDoc(doc(db, PATH_LOBBY, gameId));
-                await deleteDoc(doc(db, PATH_GAMES, gameId));
-            } catch (error) { console.error(error); }
-        }
-
-        // --- GAME LOGIC ---
-        function getNewWord(categoryName = null, usedWords = []) {
-            let categoryToPickFrom = categoryName;
-            if (!categoryToPickFrom) {
-                const allCategories = Object.keys(WORD_CATEGORIES);
-                categoryToPickFrom = allCategories[Math.floor(Math.random() * allCategories.length)];
-            }
-            const wordList = WORD_CATEGORIES[categoryToPickFrom];
-            if (!wordList || wordList.length === 0) return getNewWord(null, usedWords);
-
-            let availableWords = wordList.filter(word => !usedWords.includes(word.toUpperCase()));
-            let needsReset = false;
-            if (availableWords.length === 0) { availableWords = wordList; needsReset = true; }
+        async function createGame(diff, cat) {
+            if(!cat) { openCatModal(diff); return; }
             
-            const word = availableWords[Math.floor(Math.random() * availableWords.length)];
+            const words = WORD_CATEGORIES[cat];
+            const word = words[Math.floor(Math.random() * words.length)];
+            
             let description = null;
-            if (categoryToPickFrom === "Ships (Couples)") {
+            if (cat === "Ships (Couples)") {
                 const shipObj = SHIP_DATA_RAW.find(s => s.ship.toUpperCase() === word);
                 if (shipObj) description = shipObj.personnages.join(" + ");
             }
-            return { word: word, category: categoryToPickFrom, description: description, needsReset: needsReset };
-        }
 
-        async function createGame(difficulty, categoryName) {
-            DOM.createGameFacileBtn.disabled = true;
-            DOM.createGameDifficileBtn.disabled = true;
-            
             try {
-                const newWordData = getNewWord(categoryName, []);
+                const gRef = await addDoc(collection(db, "games"), {
+                    hostId: myPseudoID,
+                    word: word,
+                    category: cat,
+                    wordDescription: description || null,
+                    difficulty: diff,
+                    guesses: [],
+                    wrongs: 0,
+                    status: 'playing',
+                    players: [myPseudoID],
+                    playerNames: { [myPseudoID]: myPseudoName },
+                    scores: { [myPseudoID]: 0 },
+                    turn: myPseudoID,
+                    usedWords: [word]
+                });
                 
-                // Utilise l'ID Pseudo comme hostId
-                const gameRef = await addDoc(collection(db, PATH_GAMES), {
-                    hostId: currentPlayerPseudoID,
-                    word: newWordData.word.toUpperCase(),
-                    category: newWordData.category,
-                    wordDescription: newWordData.description || null, 
-                    difficulty: difficulty,
-                    guessedLetters: [],
-                    wrongGuesses: 0,
-                    status: "playing",
-                    playerList: [currentPlayerPseudoID],
-                    playerNames: { [currentPlayerPseudoID]: currentDisplayPseudo },
-                    playerScores: { [currentPlayerPseudoID]: 0 },
-                    currentPlayerTurn: currentPlayerPseudoID,
-                    starterIndex: 0,
-                    usedWords: [newWordData.word.toUpperCase()]
+                await setDoc(doc(db, "lobby", gRef.id), {
+                    hostId: myPseudoID,
+                    hostName: myPseudoName,
+                    difficulty: diff,
+                    date: serverTimestamp()
                 });
-
-                await setDoc(doc(db, PATH_LOBBY, gameRef.id), {
-                    hostId: currentPlayerPseudoID,
-                    hostName: currentDisplayPseudo,
-                    difficulty: difficulty,
-                    createdAt: serverTimestamp()
-                });
-
-                joinGame(gameRef.id);
-            } catch (e) {
-                console.error("Erreur creation", e);
-                DOM.createGameFacileBtn.disabled = false;
-                DOM.createGameDifficileBtn.disabled = false;
-            }
-        }
-
-        async function joinGame(gameId) {
-            currentGameId = gameId;
-            if (unsubscribeGameListener) unsubscribeGameListener();
-            if (unsubscribeLobbyListener) unsubscribeLobbyListener();
-
-            // Rejoindre logic
-            const gameRef = doc(db, PATH_GAMES, gameId);
-            
-            try {
-                const gameDoc = await getDoc(gameRef);
-                if(gameDoc.exists()) {
-                    const data = gameDoc.data();
-                    // Ajoute le joueur s'il n'y est pas
-                    if(!data.playerList.includes(currentPlayerPseudoID)) {
-                        const newList = [...data.playerList, currentPlayerPseudoID];
-                        const newNames = {...data.playerNames, [currentPlayerPseudoID]: currentDisplayPseudo};
-                        const newScores = {...data.playerScores, [currentPlayerPseudoID]: 0};
-                        await updateDoc(gameRef, {
-                            playerList: newList,
-                            playerNames: newNames,
-                            playerScores: newScores
-                        });
-                    }
-                }
+                
+                joinGame(gRef.id);
             } catch(e) { console.error(e); }
-
-            DOM.lobbyContainer.classList.add('hidden');
-            DOM.gameContainer.classList.remove('hidden');
-            generateKeyboard();
-            
-            unsubscribeGameListener = onSnapshot(gameRef, (docSnap) => {
-                if (!docSnap.exists()) {
-                    alert("Partie terminée ou supprimée");
-                    leaveGame();
-                    return;
-                }
-                updateUI(docSnap.data());
-            });
         }
 
-        async function leaveGame() {
-            if (unsubscribeGameListener) unsubscribeGameListener();
-            currentGameId = null;
-            showLobby();
-        }
-
-        // --- UI UPDATES ---
-        function updateUI(gameState) {
-            if (gameState.difficulty === 'facile') {
-                DOM.categoryP.classList.remove('hidden');
-                DOM.categoryDisplay.textContent = gameState.category;
-            } else {
-                DOM.categoryP.classList.add('hidden');
-            }
-
-            const isMyTurn = (gameState.currentPlayerTurn === currentPlayerPseudoID);
-            const gameIsOver = (gameState.status !== 'playing');
-
-            if (gameIsOver) {
-                DOM.turnIndicator.textContent = "";
-            } else if (isMyTurn) {
-                DOM.turnIndicator.textContent = "C'est votre tour !";
-                DOM.turnIndicator.style.color = "#ffd700";
-            } else {
-                const turnName = gameState.playerNames[gameState.currentPlayerTurn] || "Joueur";
-                DOM.turnIndicator.textContent = `Au tour de ${turnName}...`;
-                DOM.turnIndicator.style.color = "#aaa";
-            }
-
-            DOM.guessesLeftSpan.textContent = MAX_GUESSES - gameState.wrongGuesses;
-            
-            displayWord(gameState.word, gameState.guessedLetters);
-            
-            // Clavier
-            DOM.keyboard.querySelectorAll('button').forEach(btn => {
-                const letter = btn.dataset.letter;
-                btn.disabled = gameIsOver || !isMyTurn || gameState.guessedLetters.includes(letter);
-                if(gameState.guessedLetters.includes(letter)) {
-                    btn.style.opacity = 0.5;
-                }
-            });
-
-            // Hangman
-            DOM.hangmanParts.forEach(part => part.style.visibility = 'hidden');
-            for (let i = 0; i < gameState.wrongGuesses; i++) {
-                if (i < DOM.hangmanParts.length) DOM.hangmanParts[i].style.visibility = 'visible';
-            }
-
-            // Scores
-            DOM.scoresList.innerHTML = '';
-            gameState.playerList.forEach(uid => {
-                const div = document.createElement('div');
-                div.className = "flex justify-between p-1";
-                const isTurn = uid === gameState.currentPlayerTurn;
-                const pseudo = gameState.playerNames[uid] || uid;
-                div.innerHTML = `<span class="${isTurn ? 'text-yellow-300' : ''}">${pseudo}:</span> <span class="font-bold">${gameState.playerScores[uid] || 0}</span>`;
-                if(isTurn) div.style.backgroundColor = "rgba(255,215,0,0.2)";
-                DOM.scoresList.appendChild(div);
-            });
-
-            // Fin de partie
-            if(gameIsOver) {
-                DOM.gameStatus.classList.remove('hidden');
-                DOM.loseImage.classList.toggle('hidden', gameState.status !== 'lost');
-                
-                let wordText = gameState.word;
-                if (gameState.wordDescription) wordText += `\n(${gameState.wordDescription})`;
-
-                if (gameState.status === 'won') {
-                    DOM.statusMessage.textContent = 'Gagné ! Tu es sauvé !';
-                    DOM.statusMessage.className = "text-4xl font-bold mb-4 text-green-500";
-                    DOM.correctWordDisplay.textContent = `Tu as deviné : ${wordText}`;
-                } else {
-                    DOM.statusMessage.textContent = 'Perdu ! Direction l\'Extermination !';
-                    DOM.statusMessage.className = "text-4xl font-bold mb-4 text-red-500";
-                    DOM.correctWordDisplay.textContent = `Le mot était : ${wordText}`;
-                }
-                // Seul l'hôte (celui qui a créé) peut relancer
-                DOM.replayGameButton.style.display = (gameState.hostId === currentPlayerPseudoID) ? 'block' : 'none';
-                
-                DOM.replayGameButton.onclick = () => {
-                    const newData = getNewWord(gameState.category, gameState.usedWords || []);
-                    const nextPlayer = gameState.playerList[(gameState.starterIndex + 1) % gameState.playerList.length];
-                    
-                    updateDoc(doc(db, PATH_GAMES, currentGameId), {
-                        word: newData.word.toUpperCase(),
-                        desc: newData.description,
-                        guessedLetters: [],
-                        wrongGuesses: 0,
-                        status: "playing",
-                        currentPlayerTurn: nextPlayer,
-                        starterIndex: (gameState.starterIndex + 1) % gameState.playerList.length,
-                        usedWords: [...(gameState.usedWords||[]), newData.word.toUpperCase()]
-                    });
-                    DOM.gameStatus.classList.add('hidden');
-                };
-            } else {
-                DOM.gameStatus.classList.add('hidden');
-            }
-        }
-
-        function displayWord(word, guesses) {
-            DOM.wordDisplay.innerHTML = '';
-            word.split(' ').forEach((wPart, idx) => {
-                const container = document.createElement('div');
-                container.className = "flex gap-2 mr-4";
-                wPart.split('').forEach(char => {
-                    const div = document.createElement('div');
-                    div.className = "word-display-letter text-2xl md:text-4xl text-center";
-                    div.textContent = guesses.includes(char) ? char : '_';
-                    container.appendChild(div);
-                });
-                DOM.wordDisplay.appendChild(container);
-            });
-        }
-
-        function generateKeyboard() {
-            DOM.keyboard.innerHTML = '';
-            "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('').forEach(char => {
-                const btn = document.createElement('button');
-                btn.textContent = char;
-                btn.dataset.letter = char;
-                btn.className = "key w-8 h-10 md:w-12 md:h-12 rounded font-bold m-1";
-                btn.onclick = () => handleGuess(char);
-                DOM.keyboard.appendChild(btn);
-            });
-        }
-
-        async function handleGuess(char) {
-            if (!currentGameId) return;
-            const gameRef = doc(db, PATH_GAMES, currentGameId);
-            
-            await runTransaction(db, async (t) => {
-                const doc = await t.get(gameRef);
-                const data = doc.data();
-                if (data.status !== 'playing' || data.currentPlayerTurn !== currentPlayerPseudoID) return;
-                if (data.guessedLetters.includes(char)) return;
-
-                const newGuesses = [...data.guessedLetters, char];
-                let newWrongs = data.wrongGuesses;
-                let newStatus = 'playing';
-                let hit = data.word.includes(char);
-
-                if (!hit) newWrongs++;
-
-                const allFound = data.word.replace(/ /g, '').split('').every(c => newGuesses.includes(c));
-                if (allFound) newStatus = 'won';
-                if (newWrongs >= MAX_GUESSES) newStatus = 'lost';
-
-                // Tour suivant
-                let nextTurn = data.currentPlayerTurn;
-                if (!hit && newStatus === 'playing') {
-                    const idx = data.playerList.indexOf(currentPlayerPseudoID);
-                    nextTurn = data.playerList[(idx + 1) % data.playerList.length];
-                }
-                
-                // Score update
-                let newScores = {...data.playerScores};
-                if (newStatus === 'won') {
-                    newScores[currentPlayerPseudoID] = (newScores[currentPlayerPseudoID] || 0) + 1;
-                    t.update(doc(db, PATH_USERS, currentPlayerPseudoID), { totalScore: increment(1) });
-                }
-
-                t.update(gameRef, {
-                    guessedLetters: newGuesses,
-                    wrongGuesses: newWrongs,
-                    status: newStatus,
-                    currentPlayerTurn: nextTurn,
-                    playerScores: newScores
-                });
-            });
-        }
-
-        function showCategoryModal(mode) {
-            DOM.categoryListContainer.innerHTML = '';
+        function openCatModal(diff) {
+            DOM.catList.innerHTML = '';
             Object.keys(WORD_CATEGORIES).forEach(cat => {
                 const btn = document.createElement('button');
                 btn.textContent = cat;
                 btn.className = "category-selection-button";
                 btn.onclick = () => {
-                    DOM.categoryModal.classList.add('hidden');
-                    if (mode === 'create') createGame('facile', cat);
+                    DOM.modal.classList.add('hidden');
+                    createGame(diff, cat);
                 };
-                DOM.categoryListContainer.appendChild(btn);
+                DOM.catList.appendChild(btn);
             });
-            DOM.categoryModal.classList.remove('hidden');
-            if(mode === 'create') DOM.lobbyContainer.classList.add('hidden');
+            DOM.modal.classList.remove('hidden');
         }
 
-        // --- LISTENERS ---
-        DOM.authLoginBtn.onclick = handleLogin;
-        DOM.authRegisterBtn.onclick = handleRegister;
-        DOM.createGameFacileBtn.onclick = () => showCategoryModal('create');
-        DOM.createGameDifficileBtn.onclick = () => createGame('difficile', null);
-        DOM.leaveGameBtn.onclick = leaveGame;
-        DOM.lobbyReturnButton.onclick = leaveGame;
-        DOM.logoutBtn.onclick = () => { showAuth(); };
-        DOM.categoryModalCancelBtn.onclick = () => {
-             DOM.categoryModal.classList.add('hidden');
-             DOM.lobbyContainer.classList.remove('hidden');
-        };
+        async function joinGame(id) {
+            currentGameId = id;
+            if(unsubGame) unsubGame();
+            
+            // Ajout joueur
+            const gRef = doc(db, "games", id);
+            try {
+                const snap = await getDoc(gRef);
+                if(snap.exists()) {
+                    const d = snap.data();
+                    if(!d.players.includes(myPseudoID)) {
+                        await updateDoc(gRef, {
+                            players: [...d.players, myPseudoID],
+                            [`playerNames.${myPseudoID}`]: myPseudoName,
+                            [`scores.${myPseudoID}`]: 0
+                        });
+                    }
+                }
+            } catch(e) {}
 
-        // Démarrage : On s'assure juste que la connexion réseau est là
+            DOM.lobby.classList.add('hidden');
+            DOM.game.classList.remove('hidden');
+            
+            unsubGame = onSnapshot(gRef, (snap) => {
+                if(!snap.exists()) { leaveGame(); alert("Partie terminée."); return; }
+                renderGame(snap.data());
+            });
+        }
+
+        async function deleteGame(id) {
+            await deleteDoc(doc(db, "lobby", id));
+            await deleteDoc(doc(db, "games", id));
+        }
+
+        function leaveGame() {
+            if(unsubGame) unsubGame();
+            currentGameId = null;
+            DOM.game.classList.add('hidden');
+            DOM.displays.status.classList.add('hidden');
+            DOM.lobby.classList.remove('hidden');
+        }
+
+        // --- JEU ---
+        function renderGame(data) {
+            // UI Info
+            DOM.displays.cat.textContent = data.category;
+            DOM.displays.guesses.textContent = MAX_GUESSES - data.wrongs;
+            
+            // Tour
+            const isMyTurn = data.turn === myPseudoID;
+            const turnName = data.playerNames[data.turn] || '?';
+            DOM.displays.turn.textContent = isMyTurn ? "C'EST TON TOUR !" : `Tour de ${turnName}`;
+            DOM.displays.turn.className = isMyTurn ? "text-xl font-bold text-yellow-400 animate-pulse" : "text-xl text-gray-500";
+
+            // Mot
+            DOM.displays.word.innerHTML = '';
+            data.word.split('').forEach(char => {
+                const s = document.createElement('span');
+                s.className = "word-display-letter mx-1 text-2xl";
+                if(char === ' ') { s.className="mx-2 w-4"; s.textContent = ""; }
+                else { s.textContent = data.guesses.includes(char) ? char : '_'; }
+                DOM.displays.word.appendChild(s);
+            });
+
+            // Pendu
+            DOM.displays.hangman.forEach((el, i) => {
+                el.style.visibility = i < data.wrongs ? 'visible' : 'hidden';
+            });
+
+            // Clavier
+            DOM.displays.keyboard.innerHTML = '';
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('').forEach(char => {
+                const btn = document.createElement('button');
+                btn.textContent = char;
+                btn.className = "key w-8 h-10 rounded m-1 font-bold";
+                const played = data.guesses.includes(char);
+                
+                if(played) {
+                    btn.disabled = true;
+                    btn.style.opacity = "0.3";
+                    if(data.word.includes(char)) btn.style.backgroundColor = "green";
+                } else if(!isMyTurn || data.status !== 'playing') {
+                    btn.disabled = true;
+                    btn.style.opacity = "0.5";
+                } else {
+                    btn.onclick = () => playMove(char);
+                }
+                DOM.displays.keyboard.appendChild(btn);
+            });
+
+            // Fin ?
+            if(data.status !== 'playing') {
+                DOM.displays.status.classList.remove('hidden');
+                const won = data.status === 'won';
+                DOM.displays.msg.textContent = won ? "VICTOIRE !" : "PERDU...";
+                DOM.displays.msg.className = won ? "text-5xl font-bold text-green-500 mb-4" : "text-5xl font-bold text-red-500 mb-4";
+                
+                let resText = data.word;
+                if (data.wordDescription) resText += `\n(${data.wordDescription})`;
+                DOM.displays.res.textContent = resText;
+                
+                DOM.displays.img.classList.toggle('hidden', won); // Affiche Alastor si perdu
+                
+                // Bouton Replay (Host seulement)
+                const isHost = data.hostId === myPseudoID;
+                DOM.btns.replay.classList.toggle('hidden', !isHost);
+                DOM.btns.replay.onclick = () => replay(data);
+            } else {
+                DOM.displays.status.classList.add('hidden');
+            }
+        }
+
+        async function playMove(char) {
+            if(!currentGameId) return;
+            const ref = doc(db, "games", currentGameId);
+            
+            await runTransaction(db, async (t) => {
+                const snap = await t.get(ref);
+                const d = snap.data();
+                if(d.status !== 'playing' || d.turn !== myPseudoID || d.guesses.includes(char)) return;
+
+                const nextGuesses = [...d.guesses, char];
+                let nextWrongs = d.wrongs;
+                let hit = d.word.includes(char);
+                if(!hit) nextWrongs++;
+
+                // Check win/loss
+                const allFound = d.word.replace(/ /g,'').split('').every(c => nextGuesses.includes(c));
+                let nextStatus = 'playing';
+                if(allFound) nextStatus = 'won';
+                if(nextWrongs >= MAX_GUESSES) nextStatus = 'lost';
+
+                // Next Turn
+                let nextTurn = d.turn;
+                if(!hit && nextStatus === 'playing') {
+                    const idx = d.players.indexOf(myPseudoID);
+                    nextTurn = d.players[(idx + 1) % d.players.length];
+                }
+
+                // Score
+                if(nextStatus === 'won') {
+                    t.update(doc(db, "users", myPseudoID), { score: increment(1) });
+                }
+
+                t.update(ref, {
+                    guesses: nextGuesses,
+                    wrongs: nextWrongs,
+                    status: nextStatus,
+                    turn: nextTurn
+                });
+            });
+        }
+
+        async function replay(oldData) {
+            const words = WORD_CATEGORIES[oldData.category];
+            const newWord = words[Math.floor(Math.random()*words.length)];
+            const nextP = oldData.players[(oldData.players.indexOf(oldData.turn)+1)%oldData.players.length];
+
+            let description = null;
+            if (oldData.category === "Ships (Couples)") {
+                const shipObj = SHIP_DATA_RAW.find(s => s.ship.toUpperCase() === newWord);
+                if (shipObj) description = shipObj.personnages.join(" + ");
+            }
+
+            await updateDoc(doc(db, "games", currentGameId), {
+                word: newWord,
+                wordDescription: description || null,
+                guesses: [],
+                wrongs: 0,
+                status: 'playing',
+                turn: nextP
+            });
+        }
+
+        // --- EVENTS ---
+        DOM.btns.login.onclick = login;
+        DOM.btns.register.onclick = register;
+        DOM.btns.easy.onclick = () => createGame('facile');
+        DOM.btns.hard.onclick = () => createGame('difficile');
+        DOM.btns.leave.onclick = leaveGame;
+        DOM.btns.backLobby.onclick = leaveGame;
+        DOM.btns.logout.onclick = () => location.reload();
+        DOM.btns.cancelCat.onclick = () => DOM.modal.classList.add('hidden');
+
+        // Essai de charger l'image de fond
+        const bgImg = new Image();
+        bgImg.onload = () => document.body.classList.add('bg-loaded');
+        bgImg.src = './image/backround.jpg';
+
+        // START
         initNetwork();
 
     </script>
