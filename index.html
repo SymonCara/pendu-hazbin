@@ -192,7 +192,7 @@
 
         <!-- Zone Principale : Pendu et Mot -->
         <div class="flex flex-col md:flex-row justify-center items-center flex-grow gap-4 md:gap-10">
-            <!-- Pendu (Gauche) - Taille réduite pour éviter le scroll -->
+            <!-- Pendu (Gauche) -->
             <div id="hangman-box" class="w-full md:w-auto flex flex-col items-center">
                 <svg viewBox="0 0 200 250" class="w-full max-w-[280px] h-auto border-2 border-red-900/30 rounded-lg bg-black/20 shadow-[0_0_10px_rgba(255,0,0,0.2)]">
                     <line x1="20" y1="230" x2="180" y2="230" class="gallows-part" />
@@ -230,7 +230,7 @@
             </div>
         </div>
         
-        <!-- Clavier (Tout en bas - Plus petit) -->
+        <!-- Clavier (Tout en bas) -->
         <div class="mt-2 pt-2 w-full border-t border-red-900/30">
             <div id="keyboard" class="flex flex-wrap justify-center gap-1 max-w-3xl mx-auto">
                 <!-- Clavier généré ici -->
@@ -576,7 +576,8 @@
             } catch(e) { console.error(e); }
         }
 
-        function openCatModal(diff) {
+        // MODIFIE: Fonction unifiée pour ouvrir le modal (soit création, soit replay)
+        function openCatModal(diff, isReplay = false) {
             DOM.catList.innerHTML = '';
             Object.keys(WORD_CATEGORIES).forEach(cat => {
                 const btn = document.createElement('button');
@@ -584,7 +585,11 @@
                 btn.className = "category-selection-button";
                 btn.onclick = () => {
                     DOM.modal.classList.add('hidden');
-                    createGame(diff, cat);
+                    if (isReplay) {
+                        restartGameRound(cat); // Relance le même salon avec nouvelle catégorie
+                    } else {
+                        createGame(diff, cat); // Crée un nouveau salon
+                    }
                 };
                 DOM.catList.appendChild(btn);
             });
@@ -705,6 +710,7 @@
                 }
                 const isHost = data.hostId === myPseudoID;
                 DOM.btns.replay.classList.toggle('hidden', !isHost);
+                // MODIFIE: Gère le replay selon la difficulté
                 DOM.btns.replay.onclick = () => replay(data);
             } else {
                 DOM.displays.status.classList.add('hidden');
@@ -742,17 +748,37 @@
             });
         }
 
-        async function replay(oldData) {
-            const words = WORD_CATEGORIES[oldData.category];
-            const newWord = words[Math.floor(Math.random()*words.length)];
-            const nextP = oldData.players[(oldData.players.indexOf(oldData.turn)+1)%oldData.players.length];
+        // MODIFIE: Logique de replay qui ouvre le modal si Facile
+        function replay(oldData) {
+            if (oldData.difficulty === 'facile') {
+                openCatModal('facile', true); // true = mode replay
+            } else {
+                // En difficile, on relance direct dans la même catégorie (ou aléatoire selon logique précédente)
+                restartGameRound(oldData.category);
+            }
+        }
+
+        // NOUVEAU: Fonction dédiée pour relancer la manche dans le même salon
+        async function restartGameRound(category) {
+            // Récupère les infos actuelles pour la rotation
+            const gameRef = doc(db, "games", currentGameId);
+            const snap = await getDoc(gameRef);
+            if (!snap.exists()) return;
+            const oldData = snap.data();
+
+            const words = WORD_CATEGORIES[category];
+            const newWord = words[Math.floor(Math.random() * words.length)];
+            const nextP = oldData.players[(oldData.players.indexOf(oldData.turn) + 1) % oldData.players.length];
+            
             let description = null;
-            if (oldData.category === "Ships (Couples)") {
+            if (category === "Ships (Couples)") {
                 const shipObj = SHIP_DATA_RAW.find(s => s.ship.toUpperCase() === newWord);
                 if (shipObj) description = shipObj.personnages.join(" + ");
             }
-            await updateDoc(doc(db, "games", currentGameId), {
+            
+            await updateDoc(gameRef, {
                 word: newWord,
+                category: category,
                 wordDescription: description || null,
                 guesses: [],
                 wrongs: 0,
