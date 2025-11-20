@@ -41,6 +41,11 @@
             0%, 100% { border-color: #ff0000; box-shadow: 0 0 20px #ff0000; }
             50% { border-color: #ff4d4d; box-shadow: 0 0 30px #ff4d4d, 0 0 10px #ff0000; }
         }
+        @keyframes appear-dramatic {
+            0% { transform: scale(0) rotate(-10deg); opacity: 0; }
+            60% { transform: scale(1.1) rotate(5deg); opacity: 1; }
+            100% { transform: scale(1) rotate(0); }
+        }
 
         .title-font {
             font-family: 'Cinzel Decorative', cursive;
@@ -87,13 +92,13 @@
         .hangman-part { stroke: #ffd700; stroke-width: 4; fill: none; stroke-linecap: round; stroke-linejoin: round; visibility: hidden; }
         .gallows-part { stroke: #cc0000; stroke-width: 7; fill: none; }
         
-        .lobby-button {
+        .replay-button, .lobby-button {
             background-color: #ffd700;
             color: #1a0000;
             font-weight: bold;
             transition: all 0.2s ease;
         }
-        .lobby-button:hover {
+        .replay-button:hover, .lobby-button:hover {
             background-color: #ff0000;
             color: #fff;
             box-shadow: 0 0 15px #ff0000;
@@ -118,6 +123,15 @@
             width: 100%; margin-bottom: 0.5rem; padding: 0.75rem;
         }
         .category-selection-button:hover { background-color: #ff0000; color: #000; }
+
+        .demon-image {
+            max-height: 250px;
+            width: auto;
+            margin-bottom: 1rem;
+            animation: appear-dramatic 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            filter: drop-shadow(0 0 20px #ff0000);
+            border-radius: 10px;
+        }
 
         /* Scrollbar */
         ::-webkit-scrollbar { width: 8px; }
@@ -218,14 +232,28 @@
         <!-- Clavier -->
         <div id="keyboard" class="flex flex-wrap justify-center gap-1 md:gap-2 max-w-3xl mx-auto"></div>
         
-        <!-- Fin de partie -->
+        <!-- Écran de fin de partie -->
         <div id="game-status" class="game-status fixed inset-0 bg-black bg-opacity-95 flex flex-col justify-center items-center z-50 hidden">
-            <img id="lose-image" src="./image/Alastor-Demon.png" alt="Alastor" class="demon-image hidden" onerror="this.style.display='none'">
+            <!-- Image Alastor cachée par défaut -->
+            <img id="lose-image" src="./image/Alastor-Demon.png" alt="Alastor Demon" class="demon-image hidden" onerror="this.style.display='none'">
+            
             <h2 id="status-message" class="text-4xl font-bold mb-4"></h2>
             <p id="correct-word" class="text-2xl text-gray-400 mb-8 whitespace-pre-line"></p>
+            
+            <div class="mb-6 w-full max-w-xs">
+                <h3 class="text-lg text-yellow-300 font-bold mb-2">Scores Finaux</h3>
+                <div id="final-scores-list" class="text-left max-w-xs mx-auto text-gray-300 bg-black bg-opacity-20 p-2 rounded">
+                    <!-- Scores injectés ici -->
+                </div>
+            </div>
+
             <div class="flex gap-4">
-                <button id="replay-game-button" class="replay-button text-xl py-3 px-8 rounded-lg hidden">Rejouer</button>
-                <button id="lobby-return-button" class="replay-button text-xl py-3 px-8 rounded-lg">Quitter</button>
+                <button id="replay-game-button" class="replay-button text-xl py-3 px-8 rounded-lg hidden">
+                    Recommencer
+                </button>
+                <button id="lobby-return-button" class="replay-button text-xl py-3 px-8 rounded-lg">
+                    Retour au Lobby 
+                </button>
             </div>
         </div>
     </div>
@@ -262,7 +290,7 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // --- DONNEES COMPLÈTES (RÉINTÉGRÉES) ---
+        // --- DONNEES COMPLÈTES ---
         const SHIP_DATA_RAW = [
           { ship: "Charlastor", personnages: ["Charlie", "Alastor"] },
           { ship: "Chaggie", personnages: ["Charlie", "Vaggie"] },
@@ -404,7 +432,8 @@
                 status: document.getElementById('game-status'),
                 msg: document.getElementById('status-message'),
                 res: document.getElementById('correct-word'),
-                img: document.getElementById('lose-image')
+                img: document.getElementById('lose-image'),
+                finalScores: document.getElementById('final-scores-list')
             },
             modal: document.getElementById('category-selection-modal'),
             catList: document.getElementById('category-list-container')
@@ -416,8 +445,6 @@
         let unsubGame = null;
 
         // --- AUTHENTIFICATION ---
-        // On se connecte anonymement à Firebase juste pour avoir le droit de lire/écrire la DB.
-        // La vraie "sécurité" pseudo/mdp est gérée par notre logique Firestore.
         async function initNetwork() {
             try {
                 DOM.loader.classList.remove('hidden');
@@ -447,7 +474,7 @@
                 } else {
                     await setDoc(ref, {
                         username: pseudo,
-                        password: pass, // En clair ici (simple jeu)
+                        password: pass, 
                         score: 0
                     });
                     loginSuccess(id, pseudo);
@@ -692,6 +719,19 @@
                 
                 DOM.displays.img.classList.toggle('hidden', won); // Affiche Alastor si perdu
                 
+                // Affichage des scores finaux
+                DOM.displays.finalScores.innerHTML = '';
+                if (data.players) {
+                    data.players.forEach(uid => {
+                        const name = data.playerNames[uid] || 'Joueur';
+                        const score = data.scores[uid] || 0;
+                        const div = document.createElement('div');
+                        div.className = 'flex justify-between p-1 border-b border-gray-600';
+                        div.innerHTML = `<span class="text-gray-300">${name}</span><span class="text-yellow-400 font-bold">${score}</span>`;
+                        DOM.displays.finalScores.appendChild(div);
+                    });
+                }
+
                 // Bouton Replay (Host seulement)
                 const isHost = data.hostId === myPseudoID;
                 DOM.btns.replay.classList.toggle('hidden', !isHost);
